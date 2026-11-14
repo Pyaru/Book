@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>মাকতাবা – অনলাইন পাঠাগার</title>
+<meta name="theme-color" content="#0f6b4a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="মাকতাবা">
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f6f4ee;--card:#fff;--ink:#1f2a24;--mute:#6b766f;--brand:#0f6b4a;--brand2:#0b5139;--line:#e3e0d5}
@@ -16,12 +23,18 @@ header h1{margin:0 0 10px;font-size:20px;font-weight:700}
 .sbox input{flex:1;min-width:0}
 .sbox select{max-width:38%}
 #count{font-size:13px;opacity:.85;margin-top:8px}
+#resumeBox{max-width:900px;margin:0 auto;padding:10px 12px 0}
+#resumeBox:empty{padding:0}
+.resume{background:linear-gradient(135deg,var(--brand),#138a5f);color:#fff;border-radius:14px;padding:14px 16px;cursor:pointer}
+.resume small{display:block;opacity:.85}
+.resume b{display:block;font-size:17px;margin:2px 0;line-height:1.35}
 #list{padding:10px 12px 40px;max-width:900px;margin:0 auto}
 .item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;gap:10px;align-items:center}
 .item:active{background:#eef6f1}
 .item .t{flex:1;font-weight:600;line-height:1.35}
 .item .c{font-size:12px;color:var(--mute);margin-top:3px;font-weight:400}
 .item .go{color:var(--brand);font-size:20px}
+.pill{display:inline-block;background:#e0245e;color:#fff;font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:middle}
 .empty,.more{text-align:center;color:var(--mute);padding:24px 10px}
 .more button{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:10px 20px;font:inherit}
 
@@ -35,10 +48,18 @@ header h1{margin:0 0 10px;font-size:20px;font-weight:700}
 .ib{background:#2f3a35;color:#fff;border:0;border-radius:8px;width:38px;height:38px;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
 .ib:active{background:var(--brand)}
 #stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#zw{position:absolute;inset:0;transform-origin:50% 50%}
 #book{width:100%;height:100%;touch-action:none}
 .page{background:#fff;overflow:hidden}
 .page canvas{width:100%;height:100%;display:block}
-#msg{position:absolute;color:#fff;text-align:center;padding:20px;max-width:420px;line-height:1.6}
+#dim{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:1}
+#zl{position:absolute;inset:0;z-index:2;display:none;touch-action:none}
+#stage.zoomed #zl{display:block}
+#stage[data-th="night"] .page canvas{filter:invert(.92) hue-rotate(180deg)}
+#stage[data-th="night"] .page{background:#0d0f0e}
+#stage[data-th="sepia"] .page canvas{filter:sepia(.5) contrast(.95) brightness(.96)}
+#stage[data-th="sepia"] .page{background:#f3e7cc}
+#msg{position:absolute;color:#fff;text-align:center;padding:20px;max-width:420px;line-height:1.6;z-index:3}
 #msg a{color:#7fe3b5}
 #msg .pg{height:6px;background:#444;border-radius:3px;margin-top:12px;overflow:hidden}
 #msg .pg i{display:block;height:100%;width:0;background:#4cd698}
@@ -46,32 +67,129 @@ header h1{margin:0 0 10px;font-size:20px;font-weight:700}
 #foot input[type=range]{flex:1}
 #pn{min-width:78px;text-align:center}
 audio{height:34px;max-width:42vw}
+
+/* পড়ার সেটিং প্যানেল */
+#sp{position:absolute;top:58px;right:8px;z-index:5;width:min(300px,92vw);background:rgba(20,24,22,.97);color:#fff;border-radius:14px;padding:14px;display:none;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+#sp.open{display:block}
+#sp h4{margin:0 0 6px;font-size:13px;font-weight:600;opacity:.7}
+#sp .chips,#sp .row{display:flex;gap:6px;margin-bottom:12px}
+#sp button{flex:1;padding:9px 6px;border:1px solid #3a4a43;background:#26302c;color:#fff;border-radius:9px;font:inherit;font-size:14px;cursor:pointer}
+#sp button.on{background:var(--brand);border-color:var(--brand)}
+#sp input[type=range]{width:100%;margin:2px 0 12px}
+#sp .hint{font-size:12px;opacity:.6;margin:-4px 0 12px}
+
+/* হেডার + মেনু */
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.top h1{margin:0}
+.menu{background:rgba(255,255,255,.16);border:0;border-radius:10px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+.menu svg{width:22px;height:22px;stroke:#fff;stroke-width:2.2;stroke-linecap:round}
+#mode{display:none;align-items:center;justify-content:space-between;gap:8px;background:rgba(255,255,255,.16);border-radius:10px;padding:6px 10px;margin-top:8px;font-size:14px;font-weight:600}
+#mode button{background:#fff;color:var(--brand);border:0;border-radius:8px;padding:5px 10px;font:inherit;font-size:13px;cursor:pointer}
+.fv{background:none;border:0;font-size:22px;line-height:1;color:#b9c2bc;padding:6px;cursor:pointer}
+.fv.on{color:#e0245e}
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .2s;z-index:29}
+#ov.open{opacity:1;pointer-events:auto}
+#drawer{position:fixed;top:0;right:0;bottom:0;width:78%;max-width:320px;background:#fff;z-index:30;transform:translateX(100%);transition:transform .25s;display:flex;flex-direction:column;box-shadow:-6px 0 24px rgba(0,0,0,.2)}
+#drawer.open{transform:none}
+.dh{display:flex;justify-content:space-between;align-items:center;padding:16px;background:var(--brand);color:#fff;font-size:18px}
+.dh button{background:none;border:0;color:#fff;font-size:20px;cursor:pointer}
+#drawer nav{padding:8px;overflow:auto;flex:1}
+#drawer nav button{width:100%;display:flex;align-items:center;gap:12px;background:none;border:0;padding:13px 12px;border-radius:10px;font:inherit;font-size:16px;text-align:left;cursor:pointer;color:var(--ink)}
+#drawer nav button:active{background:#eef6f1}
+#drawer nav button span{width:26px;text-align:center}
+#drawer nav button i{margin-left:auto;font-style:normal;background:var(--brand);color:#fff;border-radius:999px;font-size:12px;padding:2px 8px;min-width:22px;text-align:center}
+#drawer nav button i:empty{display:none}
+#drawer hr{border:0;border-top:1px solid var(--line);margin:6px 8px}
+#csub{display:none;padding:0 8px 8px 50px}
+#csub.open{display:block}
+#csub a{display:block;padding:10px 12px;color:var(--brand);text-decoration:none;font-weight:600}
+.df{padding:12px 16px;font-size:12px;color:var(--mute);border-top:1px solid var(--line)}
+#toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%) translateY(10px);background:rgba(20,24,22,.94);color:#fff;padding:10px 16px;border-radius:999px;font-size:14px;z-index:60;opacity:0;pointer-events:none;transition:.2s;max-width:86vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%)}
+/* রিডার বারের বাটন: সরু স্ক্রিনে দুই লাইন */
+.ib.on{background:var(--brand)}
+#bFav.on{color:#ff7aa2}
+#bar{flex-wrap:wrap}
+#bar .title{flex:1 1 60px;min-width:60px}
+@media (max-width:700px){#aud,#bDlPdf,#bDlAud{order:1}#aud{flex:1 1 140px;max-width:none}}
+
 /* iOS fallback: rotate whole reader */
 #reader.rot{width:100vh;height:100vw;inset:auto;top:0;left:100vw;transform-origin:top left;transform:rotate(90deg)}
 </style>
 </head>
 <body>
 <header>
-  <h1>📚 মাকতাবা – অনলাইন পাঠাগার</h1>
+  <div class="top">
+    <h1>📚 মাকতাবা – অনলাইন পাঠাগার</h1>
+    <button class="menu" id="bMenu" aria-label="মেনু"><svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  </div>
   <div class="sbox">
     <input id="q" type="search" placeholder="বইয়ের নাম লিখে খুঁজুন…" autocomplete="off">
     <select id="cat"><option value="">সব ক্যাটাগরি</option></select>
   </div>
+  <div id="mode"><span id="modeLbl"></span><button id="modeX">✕ সব বই</button></div>
   <div id="count">লোড হচ্ছে…</div>
 </header>
+<div id="resumeBox"></div>
 <div id="list"></div>
+
+<div id="ov"></div>
+<aside id="drawer" aria-hidden="true">
+  <div class="dh"><b>মেনু</b><button id="dClose" aria-label="বন্ধ">✕</button></div>
+  <nav>
+    <button data-m="all"><span>🏠</span>সব বই</button>
+    <button data-m="new"><span>🆕</span>নতুন বই</button>
+    <button data-m="top"><span>🔥</span>জনপ্রিয় বই</button>
+    <button data-m="rd"><span>📖</span>সম্প্রতি পড়া<i id="nrd"></i></button>
+    <hr>
+    <button data-m="bm"><span>🔖</span>বুকমার্ক<i id="nbm"></i></button>
+    <button data-m="fav"><span>❤️</span>ফেভারিট<i id="nfav"></i></button>
+    <button data-m="dl"><span>⬇️</span>ডাউনলোড<i id="ndl"></i></button>
+    <button data-m="off"><span>📥</span>অফলাইন বই<i id="noff"></i></button>
+    <hr>
+    <button id="mInstall" style="display:none"><span>📲</span>অ্যাপ ইনস্টল করুন</button>
+    <button id="mShare"><span>📤</span>শেয়ার</button>
+    <button id="mContact"><span>📞</span>যোগাযোগ</button>
+    <div id="csub"></div>
+  </nav>
+  <div class="df" id="dfoot"></div>
+</aside>
+<div id="toast"></div>
 
 <div id="reader">
   <div id="bar">
     <button class="ib" id="bClose" title="বন্ধ">✕</button>
     <div class="title" id="rTitle"></div>
+    <button class="ib" id="bFav" title="ফেভারিট">♡</button>
+    <button class="ib" id="bBm" title="এই পৃষ্ঠায় বুকমার্ক">🔖</button>
+    <button class="ib" id="bSet" title="পড়ার সেটিং">⚙</button>
     <audio id="aud" controls preload="none" style="display:none"></audio>
     <button class="ib txt" id="bDlPdf" title="বই ডাউনলোড">⬇ PDF</button>
     <button class="ib txt" id="bDlAud" title="অডিও ডাউনলোড" style="display:none">⬇ অডিও</button>
     <button class="ib" id="bLand" title="ল্যান্ডস্কেপ">⟳</button>
     <button class="ib" id="bFull" title="ফুল স্ক্রিন">⛶</button>
   </div>
-  <div id="stage"><div id="book"></div><div id="msg"></div></div>
+  <div id="stage" data-th="normal">
+    <div id="zw"><div id="book"></div></div>
+    <div id="dim"></div>
+    <div id="zl"></div>
+    <div id="msg"></div>
+  </div>
+  <div id="sp">
+    <h4>পড়ার মোড</h4>
+    <div class="chips">
+      <button data-th="normal">☀️ সাধারণ</button>
+      <button data-th="night">🌙 রাত</button>
+      <button data-th="sepia">📜 সেপিয়া</button>
+    </div>
+    <h4>আলো</h4>
+    <input type="range" id="br" min="30" max="100" value="100">
+    <h4>জুম</h4>
+    <div class="row"><button id="zOut">−</button><button id="zVal">1×</button><button id="zIn">+</button></div>
+    <div class="hint">পাতার মাঝখানে ডাবল ট্যাপ করলেও জুম হয়। জুম অবস্থায় আঙুল টেনে সরান, দুই আঙুলে পিঞ্চ করুন।</div>
+    <div class="row"><button id="sOff">📥 অফলাইনে সেভ করুন</button></div>
+    <div class="row" style="margin-bottom:0"><button id="sShare">🔗 এই বইয়ের লিংক শেয়ার</button></div>
+  </div>
   <div id="foot">
     <button class="ib" id="bPrev">‹</button>
     <input type="range" id="rng" min="1" max="1" value="1">
@@ -85,43 +203,230 @@ audio{height:34px;max-width:42vw}
 <script>
 /* ============ কনফিগ ============ */
 const SHEET_ID   = '1A6uF_E2i0Jrnz9TpP2IVfJb26QkVJbbYtZFoPWPzSa4';   // শিটের URL-এ /d/ এবং /edit-এর মাঝের অংশ
-const SHEET_NAME = 'Books';                    // ট্যাবের নাম
-const PROXY_URL  = 'https://script.google.com/macros/s/AKfycbwN4zw8NssANxMCORG_zOcgmSPx-tHnFO1M9zXMwh9sW6FolsIQu81G5fQtcL5hzSAl/exec';                          // CORS সমস্যা হলে Apps Script প্রক্সির /exec লিংক বসান
+const SHEET_NAME = 'Books';                      // ট্যাবের নাম
+const PROXY_URL  = 'https://script.google.com/macros/s/AKfycbwN4zw8NssANxMCORG_zOcgmSPx-tHnFO1M9zXMwh9sW6FolsIQu81G5fQtcL5hzSAl/exec';                          // Apps Script প্রক্সির /exec লিংক (CORS + জনপ্রিয় বইয়ের গণনা)
+const NEW_COUNT  = 10;                          // শিটের শেষ কতটা বই "নতুন" ধরা হবে
+// মেনুর "যোগাযোগ"-এ যা দেবেন সেটাই দেখাবে; ফাঁকা রাখলে ওই লাইন আসবে না
+const CONTACT = {
+  whatsapp: '96897657955',   // দেশের কোডসহ নম্বর, শুধু সংখ্যা। যেমন 96891234567
+  email:    'pearu86@gmail.com',   // যেমন info@example.com
+  link:     'https://www.facebook.com/share/19xhQV4F9g'    // ফেসবুক পেজ / ওয়েবসাইট ইত্যাদির লিংক
+};
 /* ================================= */
+
+/*HELPERS*/
+// বইয়ের লিংক থেকে ছোট স্থায়ী আইডি (?b=... লিংকের জন্য)
+function hid(s){
+  let h1=0xdeadbeef,h2=0x41c6ce57;
+  for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677)}
+  h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);
+  h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
+  return (4294967296*(2097151&h2)+(h1>>>0)).toString(36);
+}
+// সার্চের জন্য লেখা এক রকম করা: বাংলা বানান-ভেদ (য/জ, ণ/ন, শ/ষ/স, ই/ঈ, ু/ূ, ো/ু ...), আরবি/উর্দু হরকত ও অক্ষর-ভেদ
+function norm(s){
+  s=(s==null?'':String(s)).normalize('NFD').toLowerCase();
+  const BD={'০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9'};
+  s=s.replace(/[০-৯]/g,c=>BD[c])
+     .replace(/[٠-٩]/g,c=>String(c.charCodeAt(0)-0x660))
+     .replace(/[۰-۹]/g,c=>String(c.charCodeAt(0)-0x6F0))
+     .replace(/[̀-ًͯ-ٰٟۖ-ۭ‌‍়্ঁঃ]/g,'')
+     .replace(/ো/g,'ু')
+     .replace(/[যজ]/g,'জ')
+     .replace(/[ণন]/g,'ন')
+     .replace(/[শষস]/g,'স')
+     .replace(/ঈ/g,'ই').replace(/ী/g,'ি')
+     .replace(/ঊ/g,'উ').replace(/ূ/g,'ু')
+     .replace(/ৎ/g,'ত').replace(/ং/g,'ঙ')
+     .replace(/[يىیےئ]/g,'ی')
+     .replace(/[كک]/g,'ک')
+     .replace(/[ةہھهۃ]/g,'ه')
+     .replace(/[ٱ]/g,'ا')
+     .replace(/[^\p{L}\p{M}\p{N}\s]/gu,' ')
+     .replace(/([^\d\s])\1+/gu,'$1')
+     .replace(/\s+/g,' ').trim();
+  return s;
+}
+function lev(a,b,k){
+  if(Math.abs(a.length-b.length)>k)return k+1;
+  let p=Array.from({length:b.length+1},(_,i)=>i);
+  for(let i=1;i<=a.length;i++){
+    const c=[i];let min=i;
+    for(let j=1;j<=b.length;j++){
+      const v=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));
+      c[j]=v;if(v<min)min=v;
+    }
+    if(min>k)return k+1;
+    p=c;
+  }
+  return p[b.length];
+}
+// বানানে ১–২টা ভুল থাকলেও কাছাকাছি শব্দ ধরে
+function near(w,t){const k=t.length>=8?2:t.length>=4?1:0;return k>0&&lev(w,t,k)<=k}
+/*END_HELPERS*/
 
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 const $=id=>document.getElementById(id);
-let books=[],shown=0,filtered=[];
+const BASE=location.href.split(/[?#]/)[0];
+let books=[],shown=0,filtered=[],BYLINK=new Map();
 const PAGE_SIZE=40;
 
-const norm=s=>(s||'').toString().toLowerCase()
-  .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g,'')   // আরবি/উর্দু হরকত
-  .replace(/[\u200c\u200d]/g,'').replace(/\s+/g,' ').trim();
+/* ===== সেভ করা তালিকা (এই ফোনের ব্রাউজারে থাকে) ===== */
+function load(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}}
+function store(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+let FAV=load('mk_fav',[]),BM=load('mk_bm',{}),DL=load('mk_dl',[]);
+let LP=load('mk_last',{});            // শেষ পড়া পৃষ্ঠা: link → {page,total,ts}
+let OFF=load('mk_off',[]);            // অফলাইনে সেভ: [{link,size,ts}]
+let PREF=load('mk_pref',{th:'normal',br:100});
+const BKC='mk-books';
+const isOff=b=>OFF.some(o=>o.link===b.link);
+const fmtDate=ts=>new Date(ts).toLocaleDateString('bn-BD',{day:'numeric',month:'short'});
+function recordDl(b){
+  DL=DL.filter(d=>d.link!==b.link);DL.unshift({link:b.link,ts:Date.now()});DL=DL.slice(0,200);
+  store('mk_dl',DL);updateBadges();
+}
+let toastT;
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('show'),2200)}
+function paintHeart(el){const on=FAV.includes(el.dataset.link);el.textContent=on?'♥':'♡';el.classList.toggle('on',on)}
+function refreshHearts(){document.querySelectorAll('.fv').forEach(paintHeart)}
+function toggleFav(b){
+  const i=FAV.indexOf(b.link);
+  if(i>=0)FAV.splice(i,1);else FAV.unshift(b.link);
+  store('mk_fav',FAV);refreshHearts();paintReader();updateBadges();
+  toast(i>=0?'ফেভারিট থেকে সরানো হয়েছে':'ফেভারিটে যোগ হয়েছে');
+}
+function updateBadges(){
+  const set=(id,n)=>{$(id).textContent=n>0?n:''};
+  set('nbm',Object.keys(BM).length);set('nfav',FAV.length);set('ndl',DL.length);
+  set('noff',OFF.length);set('nrd',Object.keys(LP).length);
+  $('dfoot').textContent=books.length?`মোট ${books.length} টি বই`:'';
+}
 
+/* ===== অফলাইন বই (ব্রাউজারের Cache-এ) ===== */
+async function offGet(url){
+  if(!window.caches)return null;
+  try{const c=await caches.open(BKC);const r=await c.match(url);return r?new Uint8Array(await r.arrayBuffer()):null}catch(e){return null}
+}
+async function offSave(b,blob){
+  const c=await caches.open(BKC);
+  await c.put(b.link,new Response(blob,{headers:{'Content-Type':'application/pdf'}}));
+  OFF=OFF.filter(o=>o.link!==b.link);OFF.unshift({link:b.link,size:blob.size,ts:Date.now()});store('mk_off',OFF);
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+}
+async function offDel(b){
+  try{const c=await caches.open(BKC);await c.delete(b.link)}catch(e){}
+  OFF=OFF.filter(o=>o.link!==b.link);store('mk_off',OFF);
+}
+
+/* ===== জনপ্রিয় বই (Apps Script প্রক্সির Stats ট্যাব থেকে) ===== */
+let TOP=null,TOPV={},TOPT=0;   // TOP: null=আনা হয়নি, false=ব্যর্থ, অ্যারে=তালিকা
+async function fetchTop(){
+  if(!PROXY_URL){TOP=[];return}
+  try{
+    const r=await fetch(PROXY_URL+'?a=top&n=20');const j=await r.json();
+    TOP=(j.top||[]);TOPV={};TOP.forEach(x=>TOPV[x.k]=x.v);TOPT=Date.now();
+  }catch(e){TOP=false}
+}
+function hit(b){
+  if(!PROXY_URL)return;
+  const k='h_'+b.link;
+  try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
+  fetch(PROXY_URL+'?a=hit&k='+encodeURIComponent(b.link)+'&n='+encodeURIComponent(b.name),{mode:'no-cors',keepalive:true}).catch(()=>{});
+}
+
+/* ===== মোড (কোন তালিকা দেখাচ্ছে) ===== */
+let mode='all';
+const MODES={all:'',new:'🆕 নতুন বই',top:'🔥 জনপ্রিয় বই',rd:'📖 সম্প্রতি পড়া',bm:'🔖 বুকমার্ক',fav:'❤️ ফেভারিট',dl:'⬇️ ডাউনলোড করা বই',off:'📥 অফলাইন বই'};
+const EMPTY={
+  all:'কোনো বই পাওয়া যায়নি',
+  new:'কোনো বই নেই',
+  rd:'এখনো কোনো বই পড়া শুরু করা হয়নি।',
+  fav:'এখনো কোনো ফেভারিট বই নেই।<br>বইয়ের পাশের ♡ চাপুন।',
+  bm:'এখনো কোনো বুকমার্ক নেই।<br>বই পড়ার সময় উপরের 🔖 চাপুন।',
+  dl:'এখনো কিছু ডাউনলোড করা হয়নি।',
+  off:'অফলাইনে কোনো বই সেভ নেই।<br>বই পড়ার সময় ⚙ চেপে "অফলাইনে সেভ করুন" দিন।'
+};
+function emptyMsg(){
+  if(mode==='top'){
+    if(!PROXY_URL)return 'জনপ্রিয় তালিকার জন্য PROXY_URL সেট করতে হবে।';
+    if(TOP===null)return 'লোড হচ্ছে…';
+    if(TOP===false)return 'তালিকা আনা যায়নি। একটু পরে চেষ্টা করুন।';
+    return 'এখনো যথেষ্ট তথ্য জমেনি।';
+  }
+  return EMPTY[mode]||EMPTY.all;
+}
+function pool(){
+  const by=BYLINK;
+  if(mode==='new')return books.slice(-NEW_COUNT).reverse();
+  if(mode==='top')return Array.isArray(TOP)?TOP.map(x=>by.get(x.k)).filter(Boolean):[];
+  if(mode==='rd')return Object.entries(LP).sort((a,b)=>b[1].ts-a[1].ts).map(([l])=>by.get(l)).filter(Boolean);
+  if(mode==='fav'){const s=new Set(FAV);return books.filter(b=>s.has(b.link))}
+  if(mode==='bm')return books.filter(b=>BM[b.link]).sort((a,b)=>BM[b.link].ts-BM[a.link].ts);
+  if(mode==='dl')return DL.map(d=>by.get(d.link)).filter(Boolean);
+  if(mode==='off')return OFF.map(o=>by.get(o.link)).filter(Boolean);
+  return books;
+}
+
+/* ===== শিট লোড ===== */
+function setBooks(rows){
+  books=rows;
+  books.forEach((b,i)=>{
+    b.hay=norm(b.name+' '+b.cat+' '+b.topics);b.words=b.hay.split(' ');
+    b.id=hid(b.link);b.isNew=books.length>NEW_COUNT&&i>=books.length-NEW_COUNT;
+  });
+  BYLINK=new Map(books.map(b=>[b.link,b]));
+  $('cat').innerHTML='<option value="">সব ক্যাটাগরি</option>';
+  [...new Set(books.map(b=>b.cat).filter(Boolean))].sort().forEach(c=>{
+    const o=document.createElement('option');o.value=c;o.textContent=c;$('cat').appendChild(o);
+  });
+}
 async function loadSheet(){
+  let rows=null,fromCache=false;
   try{
     const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=1&sheet=${encodeURIComponent(SHEET_NAME)}`;
     const t=await (await fetch(url)).text();
     const j=JSON.parse(t.substring(t.indexOf('(')+1,t.lastIndexOf(')')));
     const cell=(r,i)=>{const c=r.c[i];return c&&c.v!=null?String(c.v).trim():''};
-    books=j.table.rows.map(r=>({
-      name:cell(r,0),link:cell(r,1),cat:cell(r,2),audio:cell(r,3),topics:cell(r,4)
-    })).filter(b=>/^https?:/i.test(b.link)&&b.name);
-    books.forEach(b=>b.hay=norm(b.name+' '+b.cat+' '+b.topics));
-    const cats=[...new Set(books.map(b=>b.cat).filter(Boolean))].sort();
-    cats.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;$('cat').appendChild(o)});
-    apply();
+    rows=j.table.rows.map(r=>({name:cell(r,0),link:cell(r,1),cat:cell(r,2),audio:cell(r,3),topics:cell(r,4)}))
+      .filter(b=>/^https?:/i.test(b.link)&&b.name);
+    try{localStorage.setItem('mk_cache',JSON.stringify(rows))}catch(e){}
   }catch(e){
-    $('count').textContent='শিট লোড হয়নি। শিটের শেয়ারিং "Anyone with the link – Viewer" করা আছে কি না দেখুন।';
+    rows=load('mk_cache',null);fromCache=!!rows;
   }
+  if(!rows){
+    $('count').textContent='শিট লোড হয়নি। শিটের শেয়ারিং "Anyone with the link – Viewer" করা আছে কি না, আর SHEET_ID/SHEET_NAME ঠিক আছে কি না দেখুন।';
+    return;
+  }
+  setBooks(rows);apply();
+  if(fromCache)toast('ইন্টারনেট নেই — সংরক্ষিত তালিকা দেখাচ্ছে');
+  const id=new URLSearchParams(location.search).get('b');     // বইয়ের নিজস্ব লিংক
+  if(id){const b=books.find(x=>x.id===id);if(b)openBook(b)}
 }
 
+/* ===== তালিকা ===== */
+function renderResume(){
+  const box=$('resumeBox');box.innerHTML='';
+  if(mode!=='all'||$('q').value.trim()||$('cat').value||!books.length)return;
+  const e=Object.entries(LP).sort((a,b)=>b[1].ts-a[1].ts).find(([l])=>BYLINK.has(l));
+  if(!e)return;
+  const b=BYLINK.get(e[0]),m=e[1];
+  const d=document.createElement('div');d.className='resume';
+  d.innerHTML='<small>📖 পড়া চালিয়ে যান</small><b></b><small></small>';
+  d.children[1].textContent=b.name;d.children[2].textContent=`পৃষ্ঠা ${m.page} / ${m.total}`;
+  d.onclick=()=>openBook(b,0);box.appendChild(d);
+}
 function apply(){
-  const toks=norm($('q').value).split(' ').filter(Boolean),cat=$('cat').value;
-  filtered=books.filter(b=>(!cat||b.cat===cat)&&toks.every(t=>b.hay.includes(t)));
-  shown=0;$('list').innerHTML='';
-  $('count').textContent=`${filtered.length} টি বই`+(books.length!==filtered.length?` (মোট ${books.length})`:'');
-  if(!filtered.length){$('list').innerHTML='<div class="empty">কোনো বই পাওয়া যায়নি</div>';return}
+  const toks=norm($('q').value).split(' ').filter(Boolean),cat=$('cat').value,base=pool();
+  const inCat=base.filter(b=>!cat||b.cat===cat);
+  let res=inCat.filter(b=>toks.every(t=>b.hay.includes(t))),fz=false;
+  if(!res.length&&toks.length){      // কিছু না পেলে বানান-সহনশীল সার্চ
+    res=inCat.filter(b=>toks.every(t=>b.hay.includes(t)||b.words.some(w=>near(w,t))));
+    fz=res.length>0;
+  }
+  filtered=res;
+  shown=0;$('list').innerHTML='';updateBadges();renderResume();
+  $('count').textContent=`${filtered.length} টি বই`+(base.length!==filtered.length?` (মোট ${base.length})`:'')+(fz?' • কাছাকাছি ফলাফল':'');
+  if(!filtered.length){$('list').innerHTML=`<div class="empty">${(toks.length||cat)&&base.length?EMPTY.all:emptyMsg()}</div>`;return}
   more();
 }
 function more(){
@@ -129,10 +434,20 @@ function more(){
   const frag=document.createDocumentFragment();
   filtered.slice(shown,shown+PAGE_SIZE).forEach(b=>{
     const d=document.createElement('div');d.className='item';
-    d.innerHTML=`<div class="t"></div><div class="go">›</div>`;
-    d.firstChild.textContent=b.name;
-    if(b.cat){const c=document.createElement('div');c.className='c';c.textContent=b.cat;d.firstChild.appendChild(c)}
-    d.onclick=()=>openBook(b);frag.appendChild(d);
+    d.innerHTML=`<div class="t"></div><button class="fv" aria-label="ফেভারিট"></button><div class="go">›</div>`;
+    const t=d.firstChild;t.textContent=b.name;
+    if(b.isNew){const p=document.createElement('span');p.className='pill';p.textContent='নতুন';t.prepend(p)}
+    const sub=[];
+    if(mode==='bm'&&BM[b.link])sub.push('🔖 পৃষ্ঠা '+BM[b.link].page);
+    else if(mode==='dl'){const x=DL.find(z=>z.link===b.link);if(x)sub.push('⬇ '+fmtDate(x.ts))}
+    else if(mode==='rd'&&LP[b.link])sub.push('📖 পৃষ্ঠা '+LP[b.link].page+' / '+LP[b.link].total);
+    else if(mode==='top'&&TOPV[b.link])sub.push('👁 '+TOPV[b.link]+' বার পড়া');
+    else if(mode==='off'){const o=OFF.find(z=>z.link===b.link);if(o)sub.push('📥 '+(o.size/1048576).toFixed(1)+' MB')}
+    if(b.cat)sub.push(b.cat);
+    if(sub.length){const c=document.createElement('div');c.className='c';c.textContent=sub.join(' • ');t.appendChild(c)}
+    const fv=d.querySelector('.fv');fv.dataset.link=b.link;paintHeart(fv);
+    fv.onclick=e=>{e.stopPropagation();toggleFav(b);if(mode==='fav')apply()};
+    d.onclick=()=>openBook(b,mode==='bm'&&BM[b.link]?BM[b.link].page:0);frag.appendChild(d);
   });
   $('list').appendChild(frag);shown+=PAGE_SIZE;
   if(shown<filtered.length){
@@ -143,15 +458,138 @@ function more(){
 let tm;$('q').addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(apply,150)});
 $('cat').addEventListener('change',apply);
 
+/* ===== মেনু ===== */
+function openMenu(){updateBadges();$('drawer').classList.add('open');$('ov').classList.add('open');$('drawer').setAttribute('aria-hidden','false')}
+function closeMenu(){$('drawer').classList.remove('open');$('ov').classList.remove('open');$('drawer').setAttribute('aria-hidden','true')}
+function setMode(m){
+  mode=m;$('q').value='';$('cat').value='';
+  $('mode').style.display=m==='all'?'none':'flex';$('modeLbl').textContent=MODES[m];
+  if(m==='top'&&(TOP===null||TOP===false||Date.now()-TOPT>300000)){
+    if(TOP===false)TOP=null;
+    fetchTop().then(()=>{if(mode==='top')apply()});
+  }
+  apply();window.scrollTo(0,0);
+}
+$('bMenu').onclick=openMenu;$('ov').onclick=closeMenu;$('dClose').onclick=closeMenu;
+$('modeX').onclick=()=>setMode('all');
+document.querySelectorAll('#drawer [data-m]').forEach(b=>b.onclick=()=>{setMode(b.dataset.m);closeMenu()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
+
+async function shareLink(title,text,url){
+  if(navigator.share){try{await navigator.share({title,text,url});return}catch(e){if(e&&e.name==='AbortError')return}}
+  try{await navigator.clipboard.writeText(url);toast('লিংক কপি হয়েছে')}
+  catch(e){prompt('লিংক কপি করুন',url)}
+}
+$('mShare').onclick=()=>{
+  closeMenu();
+  shareLink('মাকতাবা – অনলাইন পাঠাগার',`মাকতাবা – অনলাইন পাঠাগার\n${books.length} টি ইসলামী বই অনলাইনে পড়ুন ও ডাউনলোড করুন`,BASE);
+};
+(function buildContact(){
+  const c=CONTACT,rows=[];
+  if(c.whatsapp)rows.push(['💬 হোয়াটসঅ্যাপ','https://wa.me/'+String(c.whatsapp).replace(/\D/g,'')+'?text='+encodeURIComponent('আসসালামু আলাইকুম, মাকতাবা সম্পর্কে জানতে চাই।')]);
+  if(c.email)rows.push(['✉️ ইমেইল','mailto:'+c.email]);
+  if(c.link)rows.push(['🌐 আমাদের পেজ',c.link]);
+  if(!rows.length){$('mContact').style.display='none';return}
+  $('csub').innerHTML=rows.map(r=>`<a href="${r[1]}" target="_blank" rel="noopener">${r[0]}</a>`).join('');
+  $('mContact').onclick=()=>$('csub').classList.toggle('open');
+})();
+
+/* ===== PWA: ইনস্টল ও সার্ভিস ওয়ার্কার ===== */
+let deferredInstall=null;
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('mInstall').style.display='flex'});
+window.addEventListener('appinstalled',()=>{deferredInstall=null;$('mInstall').style.display='none';toast('অ্যাপ ইনস্টল হয়েছে')});
+if(isIOS&&!isStandalone)$('mInstall').style.display='flex';
+$('mInstall').onclick=async()=>{
+  closeMenu();
+  if(deferredInstall){deferredInstall.prompt();try{await deferredInstall.userChoice}catch(e){}deferredInstall=null;$('mInstall').style.display='none'}
+  else alert('Safari-তে নিচের শেয়ার (⬆️) বাটন চেপে "Add to Home Screen" বেছে নিন।');
+};
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});
+window.addEventListener('offline',()=>toast('ইন্টারনেট নেই'));
+window.addEventListener('online',()=>toast('ইন্টারনেট ফিরেছে'));
+
 /* ============ রিডার ============ */
 let pdf=null,flip=null,rendered=new Set(),total=0,token=0,curBook=null,curBlob=null,hideT=null;
 
-/* বার অটো-হাইড: ট্যাপ/মুভ করলে ফের আসে, ৩ সেকেন্ডে লুকায় → বই পুরো স্ক্রিনে */
+/* পড়ার সেটিং: মোড + আলো */
+function applyPref(){
+  $('stage').dataset.th=PREF.th;
+  $('dim').style.opacity=((100-PREF.br)/100*0.75).toFixed(2);
+  document.querySelectorAll('#sp [data-th]').forEach(b=>b.classList.toggle('on',b.dataset.th===PREF.th));
+  $('br').value=PREF.br;
+}
+document.querySelectorAll('#sp [data-th]').forEach(b=>b.onclick=()=>{PREF.th=b.dataset.th;store('mk_pref',PREF);applyPref()});
+$('br').oninput=e=>{PREF.br=+e.target.value;store('mk_pref',PREF);applyPref()};
+applyPref();
+
+/* জুম */
+let Z=1,PX=0,PY=0,lastTap=null;
+function paintSet(){
+  $('zVal').textContent=(Math.round(Z*10)/10)+'×';
+  if(curBook){
+    const o=isOff(curBook);
+    $('sOff').textContent=o?'🗑 অফলাইন থেকে মুছুন':'📥 অফলাইনে সেভ করুন';
+    $('sOff').classList.toggle('on',o);
+  }
+}
+function clampPan(){
+  const W=$('stage').offsetWidth,H=$('stage').offsetHeight,mx=(Z-1)*W/2,my=(Z-1)*H/2;
+  PX=Math.max(-mx,Math.min(mx,PX));PY=Math.max(-my,Math.min(my,PY));
+}
+function applyZoom(){
+  $('zw').style.transform=Z>1?`translate(${PX}px,${PY}px) scale(${Z})`:'';
+  $('stage').classList.toggle('zoomed',Z>1);paintSet();
+}
+function setZoom(z,fx,fy){
+  z=Math.max(1,Math.min(4,z));
+  if(z<1.05){Z=1;PX=PY=0;applyZoom();return}
+  const W=$('stage').offsetWidth,H=$('stage').offsetHeight;
+  if(fx==null){fx=W/2;fy=H/2}
+  const px=fx-W/2,py=fy-H/2;
+  PX=px-z*(px-PX)/Z;PY=py-z*(py-PY)/Z;Z=z;clampPan();applyZoom();
+}
+function toggleZoom(cx,cy){
+  if(!pdf)return;
+  if(Z>1){setZoom(1);return}
+  if(R.classList.contains('rot')){setZoom(2.2);return}
+  const r=$('stage').getBoundingClientRect();setZoom(2.2,cx-r.left,cy-r.top);
+}
+$('zIn').onclick=()=>pdf&&setZoom(Math.max(Z,1)*1.4);
+$('zOut').onclick=()=>pdf&&setZoom(Z/1.4);
+$('zVal').onclick=()=>setZoom(1);
+(function(){      // জুম অবস্থায় আঙুল টেনে সরানো ও দুই আঙুলে পিঞ্চ
+  const zl=$('zl'),ptrs=new Map();let pinch=null;
+  zl.addEventListener('pointerdown',e=>{
+    try{zl.setPointerCapture(e.pointerId)}catch(_){}
+    ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)||1,z:Z}}
+  });
+  zl.addEventListener('pointermove',e=>{
+    const p=ptrs.get(e.pointerId);if(!p)return;
+    const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
+    const rot=R.classList.contains('rot');
+    if(ptrs.size>=2&&pinch){
+      const [a,b]=[...ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y);
+      if(rot)setZoom(pinch.z*d/pinch.d);
+      else{const r=$('stage').getBoundingClientRect();setZoom(pinch.z*d/pinch.d,(a.x+b.x)/2-r.left,(a.y+b.y)/2-r.top)}
+    }else if(Z>1){
+      if(rot){PX+=dy;PY-=dx}else{PX+=dx;PY+=dy}
+      clampPan();applyZoom();
+    }
+  });
+  const up=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null};
+  zl.addEventListener('pointerup',up);zl.addEventListener('pointercancel',up);
+})();
+
+/* বার অটো-হাইড: ফুল স্ক্রিনের বাইরে ছুঁলে ফের আসে, ৩ সেকেন্ডে লুকায় */
 let flipping=false,tap=null;
 const inFs=()=>!!(document.fullscreenElement||document.webkitFullscreenElement)||$('reader').classList.contains('rot');
 function hideBars(){
   clearTimeout(hideT);
   if($('msg').style.display==='block')return;          // লোড/এরর মেসেজ থাকলে বার থাকবে
+  if($('sp').classList.contains('open'))return;        // সেটিং প্যানেল খোলা থাকলে বার থাকবে
   $('bar').classList.add('hide');$('foot').classList.add('hide');
 }
 function showBars(){
@@ -160,18 +598,28 @@ function showBars(){
   clearTimeout(hideT);hideT=setTimeout(hideBars,3000);
 }
 const barsAuto=()=>inFs()?hideBars():showBars();
-// ফুল স্ক্রিনের বাইরে: ছুঁলে বার আসে
 ['pointerdown','pointermove'].forEach(ev=>$('reader').addEventListener(ev,()=>{if(!inFs())showBars()},{passive:true}));
-// ফুল স্ক্রিনে: শুধু স্ক্রিনের উপরের অংশে ট্যাপ করলে বার আসে
 const localY=(cx,cy)=>$('reader').classList.contains('rot')?window.innerWidth-cx:cy;
-$('reader').addEventListener('pointerdown',e=>{tap={x:e.clientX,y:e.clientY,t:Date.now(),el:e.target}},{passive:true});
+$('reader').addEventListener('pointerdown',e=>{
+  if($('sp').classList.contains('open')&&!(e.target.closest&&e.target.closest('#sp,#bSet')))$('sp').classList.remove('open');
+  tap={x:e.clientX,y:e.clientY,t:Date.now(),el:e.target};
+},{passive:true});
 $('reader').addEventListener('pointerup',e=>{
   const t=tap;tap=null;
-  if(!t||!inFs()||flipping)return;
+  if(!t||flipping)return;
   if(Math.hypot(e.clientX-t.x,e.clientY-t.y)>12||Date.now()-t.t>500)return;   // সোয়াইপ/লং প্রেস নয়
-  if(t.el.closest&&t.el.closest('#bar,#foot'))return;
+  if(t.el.closest&&t.el.closest('#bar,#foot,#sp'))return;
+  const rot=R.classList.contains('rot'),lx=rot?t.y:t.x,ly=localY(t.x,t.y),W=R.offsetWidth,now=Date.now();
+  if(pdf&&ly>=90){
+    // পাতার ধারে ট্যাপ = পেজ ওল্টানো; মাঝখানে ডাবল ট্যাপ = জুম
+    if(Z===1&&flip&&lx<W*.18){lastTap=null;flip.flipPrev();return}
+    if(Z===1&&flip&&lx>W*.82){lastTap=null;flip.flipNext();return}
+    if(lastTap&&now-lastTap.t<330&&Math.hypot(t.x-lastTap.x,t.y-lastTap.y)<40){lastTap=null;toggleZoom(t.x,t.y);return}
+    lastTap={x:t.x,y:t.y,t:now};
+  }
+  if(!inFs())return;                                    // ফুল স্ক্রিনে: উপরের অংশে ট্যাপ করলে বার আসে
   const on=!$('bar').classList.contains('hide');
-  if(localY(t.x,t.y)<90)showBars();else if(on)hideBars();
+  if(ly<90)showBars();else if(on)hideBars();
 });
 
 function saveBlob(blob,name){
@@ -181,10 +629,44 @@ function saveBlob(blob,name){
 }
 $('bDlPdf').onclick=()=>{
   if(!curBook)return;
+  recordDl(curBook);
   if(curBlob)saveBlob(curBlob,curBook.name+'.pdf');else window.open(curBook.link,'_blank');
+};
+function paintReader(){
+  if(!curBook)return;
+  const f=FAV.includes(curBook.link);
+  $('bFav').textContent=f?'♥':'♡';$('bFav').classList.toggle('on',f);
+  $('bBm').classList.toggle('on',!!BM[curBook.link]);
+  paintSet();
+}
+$('bFav').onclick=()=>{if(curBook)toggleFav(curBook)};
+$('bBm').onclick=()=>{
+  if(!curBook||!flip)return;
+  const p=flip.getCurrentPageIndex()+1,cur=BM[curBook.link];
+  if(cur&&cur.page===p){delete BM[curBook.link];toast('বুকমার্ক সরানো হয়েছে')}
+  else{BM[curBook.link]={page:p,ts:Date.now()};toast('পৃষ্ঠা '+p+' বুকমার্ক হয়েছে')}
+  store('mk_bm',BM);paintReader();updateBadges();
+};
+$('bSet').onclick=()=>{
+  const sp=$('sp');
+  if(sp.classList.contains('open')){sp.classList.remove('open');return}
+  sp.style.top=($('bar').offsetHeight+6)+'px';paintSet();sp.classList.add('open');showBars();
+};
+$('sOff').onclick=async()=>{
+  if(!curBook)return;
+  if(isOff(curBook)){await offDel(curBook);toast('অফলাইন থেকে মুছে ফেলা হয়েছে')}
+  else if(!curBlob)toast('আগে বইটি পুরো লোড হতে দিন');
+  else if(!window.caches)toast('অফলাইন সেভের জন্য HTTPS সাইট দরকার');
+  else{try{await offSave(curBook,curBlob);toast('অফলাইনে সেভ হয়েছে ✓')}catch(e){toast('সেভ করা যায়নি (জায়গা কম হতে পারে)')}}
+  paintSet();updateBadges();
+};
+$('sShare').onclick=()=>{
+  if(!curBook)return;
+  shareLink(curBook.name,curBook.name+'\n— মাকতাবা',BASE+'?b='+curBook.id);
 };
 $('bDlAud').onclick=async()=>{
   if(!curBook||!curBook.audio)return;
+  recordDl(curBook);
   const btn=$('bDlAud'),old=btn.textContent;btn.textContent='⏳';
   try{
     const r=await fetch(curBook.audio);if(!r.ok)throw 0;
@@ -198,16 +680,16 @@ $('bDlAud').onclick=async()=>{
 function msg(html){$('msg').innerHTML=html;$('msg').style.display=html?'block':'none'}
 
 async function fetchPdf(url,onProg){
-  // ১) সরাসরি
-  try{
+  const off=await offGet(url);                          // ০) অফলাইনে সেভ করা থাকলে সেখান থেকে
+  if(off){onProg(1);return off}
+  try{                                                  // ১) সরাসরি
     const r=await fetch(url);
     if(!r.ok)throw new Error(r.status);
     const len=+r.headers.get('content-length')||0,rd=r.body.getReader(),chunks=[];let got=0;
     for(;;){const {done,value}=await rd.read();if(done)break;chunks.push(value);got+=value.length;if(len)onProg(got/len)}
     const buf=new Uint8Array(got);let o=0;chunks.forEach(c=>{buf.set(c,o);o+=c.length});return buf;
   }catch(e){ if(!PROXY_URL)throw e }
-  // ২) প্রক্সি
-  const r=await fetch(PROXY_URL+'?url='+encodeURIComponent(url));
+  const r=await fetch(PROXY_URL+'?url='+encodeURIComponent(url));   // ২) প্রক্সি
   const b64=(await r.text()).trim();
   if(!b64||b64.startsWith('ERR'))throw new Error(b64||'proxy');
   const bin=atob(b64),u=new Uint8Array(bin.length);
@@ -215,15 +697,31 @@ async function fetchPdf(url,onProg){
   return u;
 }
 
-async function openBook(b){
+// শেষ পড়া পৃষ্ঠা মনে রাখা
+let lpT;
+function saveLast(now){
+  if(!curBook||!total||!flip)return;
+  const L=curBook.link,T=total,page=Math.min(flip.getCurrentPageIndex()+1,T);
+  const doIt=()=>{
+    if(page>1)LP[L]={page,total:T,ts:Date.now()};else delete LP[L];
+    const keys=Object.keys(LP);
+    if(keys.length>300)keys.sort((a,b)=>LP[a].ts-LP[b].ts).slice(0,keys.length-300).forEach(k=>delete LP[k]);
+    store('mk_last',LP);
+  };
+  clearTimeout(lpT);
+  if(now)doIt();else lpT=setTimeout(doIt,500);
+}
+
+async function openBook(b,startPage){
   const my=++token;
   $('reader').classList.add('open');document.body.style.overflow='hidden';
+  if(!(history.state&&history.state.r)){try{history.pushState({r:1},'','?b='+b.id)}catch(e){}}
   $('rTitle').textContent=b.name;
-  curBook=b;curBlob=null;
+  curBook=b;curBlob=null;setZoom(1);applyPref();$('sp').classList.remove('open');
   const a=$('aud');
   if(b.audio){a.src=b.audio;a.style.display='block';$('bDlAud').style.display='flex'}
   else{a.removeAttribute('src');a.style.display='none';$('bDlAud').style.display='none'}
-  destroy();barsAuto();
+  destroy();barsAuto();paintReader();
   msg('বই লোড হচ্ছে…<div class="pg"><i id="pgi"></i></div>');
   try{
     const data=await fetchPdf(b.link,p=>{const i=$('pgi');if(i)i.style.width=(p*100)+'%'});
@@ -239,25 +737,31 @@ async function openBook(b){
       if(i===0||i===total-1)d.dataset.density='hard';
       const c=document.createElement('canvas');d.appendChild(c);book.appendChild(d);
     }
-    window._pw=W;window._ph=H;
     flip=new St.PageFlip(book,{
       width:Math.round(W),height:Math.round(H),size:'stretch',
       minWidth:180,maxWidth:1400,minHeight:240,maxHeight:2000,
-      showCover:true,usePortrait:true,mobileScrollSupport:false,
+      showCover:true,usePortrait:true,mobileScrollSupport:false,disableFlipByClick:true,
       maxShadowOpacity:.4,flippingTime:600,drawShadow:true
     });
     flip.loadFromHTML(book.querySelectorAll('.page'));
-    flip.on('flip',e=>{sync(e.data);renderAround(e.data)});
+    flip.on('flip',e=>{sync(e.data);renderAround(e.data);saveLast()});
     flip.on('changeState',e=>{
       if(e.data==='user_fold'||e.data==='flipping'){flipping=true;hideBars()}
       else if(e.data==='read')flipping=false;
     });
     flip.on('changeOrientation',()=>renderAround(flip.getCurrentPageIndex()));
     $('rng').max=total;$('rng').value=1;
-    msg('');sync(0);renderAround(0);barsAuto();
+    msg('');
+    const want=startPage||(LP[b.link]?LP[b.link].page:1);        // বুকমার্ক বা শেষ পড়া পৃষ্ঠা থেকে শুরু
+    const sp=Math.min(Math.max(want-1,0),total-1);
+    if(sp>0){flip.turnToPage(sp);toast('পৃষ্ঠা '+(sp+1)+' থেকে শুরু')}
+    sync(sp);renderAround(sp);barsAuto();paintReader();hit(b);
   }catch(err){
     if(my!==token)return;
-    msg(`বইটি এখানে খোলা গেল না।<br><small>(ব্রাউজার সরাসরি ফাইল পড়তে দেয়নি — প্রক্সি লাগবে)</small><br><br><a href="${b.link}" target="_blank" rel="noopener">নতুন ট্যাবে খুলুন / ডাউনলোড</a>`);
+    const offline=!navigator.onLine;
+    msg(offline
+      ?'ইন্টারনেট নেই।<br><small>এই বইটি অফলাইনে সেভ করা নেই।</small>'
+      :`বইটি এখানে খোলা গেল না।<br><small>(ব্রাউজার সরাসরি ফাইল পড়তে দেয়নি — প্রক্সি লাগবে)</small><br><br><a href="${b.link}" target="_blank" rel="noopener">নতুন ট্যাবে খুলুন / ডাউনলোড</a>`);
   }
 }
 
@@ -288,12 +792,22 @@ function sync(idx){
 
 $('bNext').onclick=()=>flip&&flip.flipNext();
 $('bPrev').onclick=()=>flip&&flip.flipPrev();
-$('rng').oninput=e=>{if(flip){const i=+e.target.value-1;flip.turnToPage(i);sync(i);renderAround(i)}};
+$('rng').oninput=e=>{if(flip){const i=+e.target.value-1;flip.turnToPage(i);sync(i);renderAround(i);saveLast()}};
 $('bClose').onclick=closeReader;
 function closeReader(){
-  token++;exitFs();unrot();$('aud').pause();
-  $('reader').classList.remove('open');document.body.style.overflow='';destroy();
+  if(history.state&&history.state.r){history.back();return}   // ফোনের ব্যাক বাটনের সাথে মেলানো
+  doClose();
 }
+function doClose(){
+  if(!$('reader').classList.contains('open'))return;
+  saveLast(true);
+  token++;exitFs();unrot();$('aud').pause();$('sp').classList.remove('open');
+  $('reader').classList.remove('open');document.body.style.overflow='';destroy();setZoom(1);
+  if(location.search){try{history.replaceState(null,'',BASE)}catch(e){}}
+  if(mode!=='all')apply();else renderResume();
+  refreshHearts();updateBadges();
+}
+window.addEventListener('popstate',()=>{if($('reader').classList.contains('open'))doClose()});
 document.addEventListener('keydown',e=>{
   if(!$('reader').classList.contains('open'))return;
   if(e.key==='ArrowLeft')flip&&flip.flipPrev();
@@ -311,7 +825,7 @@ $('bFull').onclick=()=>isFs()?exitFs():enterFs();
 
 /* ল্যান্ডস্কেপ */
 function unrot(){R.classList.remove('rot');relayout();barsAuto()}
-function relayout(){setTimeout(()=>{try{flip&&flip.update()}catch(e){}},250)}
+function relayout(){setTimeout(()=>{try{flip&&flip.update()}catch(e){}if(Z>1){clampPan();applyZoom()}},250)}
 $('bLand').onclick=async()=>{
   if(R.classList.contains('rot')){unrot();return}
   const portrait=window.innerHeight>window.innerWidth;
@@ -329,6 +843,7 @@ document.addEventListener('webkitfullscreenchange',onFsChange);
 window.addEventListener('resize',relayout);
 window.addEventListener('orientationchange',()=>{unrot()});
 
+updateBadges();
 loadSheet();
 </script>
 </body>
