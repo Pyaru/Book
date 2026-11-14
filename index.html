@@ -28,11 +28,13 @@ header h1{margin:0 0 10px;font-size:20px;font-weight:700}
 /* Reader */
 #reader{position:fixed;inset:0;background:#2b2f2d;display:none;flex-direction:column;z-index:20}
 #reader.open{display:flex}
-#bar{display:flex;align-items:center;gap:6px;padding:8px 10px;background:#1b1f1d;color:#fff;flex-wrap:nowrap}
+#bar{position:absolute;top:0;left:0;right:0;z-index:3;display:flex;align-items:center;gap:6px;padding:8px 10px;background:rgba(20,24,22,.88);color:#fff;flex-wrap:nowrap;transition:opacity .25s}
+.hide{opacity:0;pointer-events:none}
+.ib.txt{width:auto;padding:0 10px;font-size:13px;font-weight:600}
 #bar .title{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px;font-weight:600}
 .ib{background:#2f3a35;color:#fff;border:0;border-radius:8px;width:38px;height:38px;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
 .ib:active{background:var(--brand)}
-#stage{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
 #book{width:100%;height:100%}
 .page{background:#fff;overflow:hidden}
 .page canvas{width:100%;height:100%;display:block}
@@ -40,7 +42,7 @@ header h1{margin:0 0 10px;font-size:20px;font-weight:700}
 #msg a{color:#7fe3b5}
 #msg .pg{height:6px;background:#444;border-radius:3px;margin-top:12px;overflow:hidden}
 #msg .pg i{display:block;height:100%;width:0;background:#4cd698}
-#foot{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#1b1f1d;color:#fff;font-size:13px}
+#foot{position:absolute;bottom:0;left:0;right:0;z-index:3;display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(20,24,22,.88);color:#fff;font-size:13px;transition:opacity .25s}
 #foot input[type=range]{flex:1}
 #pn{min-width:78px;text-align:center}
 audio{height:34px;max-width:42vw}
@@ -64,6 +66,8 @@ audio{height:34px;max-width:42vw}
     <button class="ib" id="bClose" title="বন্ধ">✕</button>
     <div class="title" id="rTitle"></div>
     <audio id="aud" controls preload="none" style="display:none"></audio>
+    <button class="ib txt" id="bDlPdf" title="বই ডাউনলোড">⬇ PDF</button>
+    <button class="ib txt" id="bDlAud" title="অডিও ডাউনলোড" style="display:none">⬇ অডিও</button>
     <button class="ib" id="bLand" title="ল্যান্ডস্কেপ">⟳</button>
     <button class="ib" id="bFull" title="ফুল স্ক্রিন">⛶</button>
   </div>
@@ -140,7 +144,39 @@ let tm;$('q').addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(apply
 $('cat').addEventListener('change',apply);
 
 /* ============ রিডার ============ */
-let pdf=null,flip=null,rendered=new Set(),total=0,token=0;
+let pdf=null,flip=null,rendered=new Set(),total=0,token=0,curBook=null,curBlob=null,hideT=null;
+
+/* বার অটো-হাইড: ট্যাপ/মুভ করলে ফের আসে, ৩ সেকেন্ডে লুকায় → বই পুরো স্ক্রিনে */
+function showBars(){
+  $('bar').classList.remove('hide');$('foot').classList.remove('hide');
+  clearTimeout(hideT);
+  hideT=setTimeout(()=>{
+    if($('msg').style.display==='block')return;
+    $('bar').classList.add('hide');$('foot').classList.add('hide');
+  },3000);
+}
+['pointerdown','pointermove','touchstart'].forEach(ev=>$('reader').addEventListener(ev,showBars,{passive:true}));
+
+function saveBlob(blob,name){
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=name.replace(/[\\/:*?"<>|]+/g,'_');document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),60000);
+}
+$('bDlPdf').onclick=()=>{
+  if(!curBook)return;
+  if(curBlob)saveBlob(curBlob,curBook.name+'.pdf');else window.open(curBook.link,'_blank');
+};
+$('bDlAud').onclick=async()=>{
+  if(!curBook||!curBook.audio)return;
+  const btn=$('bDlAud'),old=btn.textContent;btn.textContent='⏳';
+  try{
+    const r=await fetch(curBook.audio);if(!r.ok)throw 0;
+    const b=await r.blob();
+    const ext=(curBook.audio.split('?')[0].match(/\.(mp3|m4a|wav|ogg|aac)$/i)||[,'mp3'])[1];
+    saveBlob(b,curBook.name+'.'+ext);
+  }catch(e){window.open(curBook.audio,'_blank')}   // সরাসরি না পারলে নতুন ট্যাবে
+  btn.textContent=old;
+};
 
 function msg(html){$('msg').innerHTML=html;$('msg').style.display=html?'block':'none'}
 
@@ -166,13 +202,16 @@ async function openBook(b){
   const my=++token;
   $('reader').classList.add('open');document.body.style.overflow='hidden';
   $('rTitle').textContent=b.name;
+  curBook=b;curBlob=null;
   const a=$('aud');
-  if(b.audio){a.src=b.audio;a.style.display='block'}else{a.removeAttribute('src');a.style.display='none'}
-  destroy();
+  if(b.audio){a.src=b.audio;a.style.display='block';$('bDlAud').style.display='flex'}
+  else{a.removeAttribute('src');a.style.display='none';$('bDlAud').style.display='none'}
+  destroy();showBars();
   msg('বই লোড হচ্ছে…<div class="pg"><i id="pgi"></i></div>');
   try{
     const data=await fetchPdf(b.link,p=>{const i=$('pgi');if(i)i.style.width=(p*100)+'%'});
     if(my!==token)return;
+    curBlob=new Blob([data],{type:'application/pdf'});   // pdf.js বাফার নিয়ে নেয়, তাই আগেই কপি
     pdf=await pdfjsLib.getDocument({data}).promise;
     total=pdf.numPages;
     const p1=await pdf.getPage(1),vp=p1.getViewport({scale:1});
@@ -194,7 +233,7 @@ async function openBook(b){
     flip.on('flip',e=>{sync(e.data);renderAround(e.data)});
     flip.on('changeOrientation',()=>renderAround(flip.getCurrentPageIndex()));
     $('rng').max=total;$('rng').value=1;
-    msg('');sync(0);renderAround(0);
+    msg('');sync(0);renderAround(0);showBars();
   }catch(err){
     if(my!==token)return;
     msg(`বইটি এখানে খোলা গেল না।<br><small>(ব্রাউজার সরাসরি ফাইল পড়তে দেয়নি — প্রক্সি লাগবে)</small><br><br><a href="${b.link}" target="_blank" rel="noopener">নতুন ট্যাবে খুলুন / ডাউনলোড</a>`);
