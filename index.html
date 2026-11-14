@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>মাকতাবা – অনলাইন পাঠাগার</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f4ee;--card:#fff;--ink:#1f2a24;--mute:#6b766f;--brand:#0f6b4a;--brand2:#0b5139;--line:#e3e0d5}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'Hind Siliguri',system-ui,sans-serif}
+header{background:var(--brand);color:#fff;padding:14px 16px 16px;position:sticky;top:0;z-index:5}
+header h1{margin:0 0 10px;font-size:20px;font-weight:700}
+.sbox{display:flex;gap:8px}
+.sbox input,.sbox select{border:0;border-radius:10px;padding:12px 14px;font:inherit;font-size:16px;outline:none}
+.sbox input{flex:1;min-width:0}
+.sbox select{max-width:38%}
+#count{font-size:13px;opacity:.85;margin-top:8px}
+#list{padding:10px 12px 40px;max-width:900px;margin:0 auto}
+.item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;gap:10px;align-items:center}
+.item:active{background:#eef6f1}
+.item .t{flex:1;font-weight:600;line-height:1.35}
+.item .c{font-size:12px;color:var(--mute);margin-top:3px;font-weight:400}
+.item .go{color:var(--brand);font-size:20px}
+.empty,.more{text-align:center;color:var(--mute);padding:24px 10px}
+.more button{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:10px 20px;font:inherit}
+
+/* Reader */
+#reader{position:fixed;inset:0;background:#2b2f2d;display:none;flex-direction:column;z-index:20}
+#reader.open{display:flex}
+#bar{display:flex;align-items:center;gap:6px;padding:8px 10px;background:#1b1f1d;color:#fff;flex-wrap:nowrap}
+#bar .title{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px;font-weight:600}
+.ib{background:#2f3a35;color:#fff;border:0;border-radius:8px;width:38px;height:38px;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+.ib:active{background:var(--brand)}
+#stage{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#book{width:100%;height:100%}
+.page{background:#fff;overflow:hidden}
+.page canvas{width:100%;height:100%;display:block}
+#msg{position:absolute;color:#fff;text-align:center;padding:20px;max-width:420px;line-height:1.6}
+#msg a{color:#7fe3b5}
+#msg .pg{height:6px;background:#444;border-radius:3px;margin-top:12px;overflow:hidden}
+#msg .pg i{display:block;height:100%;width:0;background:#4cd698}
+#foot{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#1b1f1d;color:#fff;font-size:13px}
+#foot input[type=range]{flex:1}
+#pn{min-width:78px;text-align:center}
+audio{height:34px;max-width:42vw}
+/* iOS fallback: rotate whole reader */
+#reader.rot{width:100vh;height:100vw;inset:auto;top:0;left:100vw;transform-origin:top left;transform:rotate(90deg)}
+</style>
+</head>
+<body>
+<header>
+  <h1>📚 মাকতাবা – অনলাইন পাঠাগার</h1>
+  <div class="sbox">
+    <input id="q" type="search" placeholder="বইয়ের নাম লিখে খুঁজুন…" autocomplete="off">
+    <select id="cat"><option value="">সব ক্যাটাগরি</option></select>
+  </div>
+  <div id="count">লোড হচ্ছে…</div>
+</header>
+<div id="list"></div>
+
+<div id="reader">
+  <div id="bar">
+    <button class="ib" id="bClose" title="বন্ধ">✕</button>
+    <div class="title" id="rTitle"></div>
+    <audio id="aud" controls preload="none" style="display:none"></audio>
+    <button class="ib" id="bLand" title="ল্যান্ডস্কেপ">⟳</button>
+    <button class="ib" id="bFull" title="ফুল স্ক্রিন">⛶</button>
+  </div>
+  <div id="stage"><div id="book"></div><div id="msg"></div></div>
+  <div id="foot">
+    <button class="ib" id="bPrev">‹</button>
+    <input type="range" id="rng" min="1" max="1" value="1">
+    <span id="pn">–</span>
+    <button class="ib" id="bNext">›</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
+<script>
+/* ============ কনফিগ ============ */
+const SHEET_ID   = 'এখানে_আপনার_শিটের_আইডি';   // শিটের URL-এ /d/ এবং /edit-এর মাঝের অংশ
+const SHEET_NAME = 'Sheet1';                    // ট্যাবের নাম
+const PROXY_URL  = '';                          // CORS সমস্যা হলে Apps Script প্রক্সির /exec লিংক বসান
+/* ================================= */
+
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const $=id=>document.getElementById(id);
+let books=[],shown=0,filtered=[];
+const PAGE_SIZE=40;
+
+const norm=s=>(s||'').toString().toLowerCase()
+  .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g,'')   // আরবি/উর্দু হরকত
+  .replace(/[\u200c\u200d]/g,'').replace(/\s+/g,' ').trim();
+
+async function loadSheet(){
+  try{
+    const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=1&sheet=${encodeURIComponent(SHEET_NAME)}`;
+    const t=await (await fetch(url)).text();
+    const j=JSON.parse(t.substring(t.indexOf('(')+1,t.lastIndexOf(')')));
+    const cell=(r,i)=>{const c=r.c[i];return c&&c.v!=null?String(c.v).trim():''};
+    books=j.table.rows.map(r=>({
+      name:cell(r,0),link:cell(r,1),cat:cell(r,2),audio:cell(r,3),topics:cell(r,4)
+    })).filter(b=>/^https?:/i.test(b.link)&&b.name);
+    books.forEach(b=>b.hay=norm(b.name+' '+b.cat+' '+b.topics));
+    const cats=[...new Set(books.map(b=>b.cat).filter(Boolean))].sort();
+    cats.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;$('cat').appendChild(o)});
+    apply();
+  }catch(e){
+    $('count').textContent='শিট লোড হয়নি। শিটের শেয়ারিং "Anyone with the link – Viewer" করা আছে কি না দেখুন।';
+  }
+}
+
+function apply(){
+  const toks=norm($('q').value).split(' ').filter(Boolean),cat=$('cat').value;
+  filtered=books.filter(b=>(!cat||b.cat===cat)&&toks.every(t=>b.hay.includes(t)));
+  shown=0;$('list').innerHTML='';
+  $('count').textContent=`${filtered.length} টি বই`+(books.length!==filtered.length?` (মোট ${books.length})`:'');
+  if(!filtered.length){$('list').innerHTML='<div class="empty">কোনো বই পাওয়া যায়নি</div>';return}
+  more();
+}
+function more(){
+  const old=document.querySelector('.more');if(old)old.remove();
+  const frag=document.createDocumentFragment();
+  filtered.slice(shown,shown+PAGE_SIZE).forEach(b=>{
+    const d=document.createElement('div');d.className='item';
+    d.innerHTML=`<div class="t"></div><div class="go">›</div>`;
+    d.firstChild.textContent=b.name;
+    if(b.cat){const c=document.createElement('div');c.className='c';c.textContent=b.cat;d.firstChild.appendChild(c)}
+    d.onclick=()=>openBook(b);frag.appendChild(d);
+  });
+  $('list').appendChild(frag);shown+=PAGE_SIZE;
+  if(shown<filtered.length){
+    const m=document.createElement('div');m.className='more';
+    m.innerHTML='<button>আরও দেখুন</button>';m.firstChild.onclick=more;$('list').appendChild(m);
+  }
+}
+let tm;$('q').addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(apply,150)});
+$('cat').addEventListener('change',apply);
+
+/* ============ রিডার ============ */
+let pdf=null,flip=null,rendered=new Set(),total=0,token=0;
+
+function msg(html){$('msg').innerHTML=html;$('msg').style.display=html?'block':'none'}
+
+async function fetchPdf(url,onProg){
+  // ১) সরাসরি
+  try{
+    const r=await fetch(url);
+    if(!r.ok)throw new Error(r.status);
+    const len=+r.headers.get('content-length')||0,rd=r.body.getReader(),chunks=[];let got=0;
+    for(;;){const {done,value}=await rd.read();if(done)break;chunks.push(value);got+=value.length;if(len)onProg(got/len)}
+    const buf=new Uint8Array(got);let o=0;chunks.forEach(c=>{buf.set(c,o);o+=c.length});return buf;
+  }catch(e){ if(!PROXY_URL)throw e }
+  // ২) প্রক্সি
+  const r=await fetch(PROXY_URL+'?url='+encodeURIComponent(url));
+  const b64=(await r.text()).trim();
+  if(!b64||b64.startsWith('ERR'))throw new Error(b64||'proxy');
+  const bin=atob(b64),u=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+  return u;
+}
+
+async function openBook(b){
+  const my=++token;
+  $('reader').classList.add('open');document.body.style.overflow='hidden';
+  $('rTitle').textContent=b.name;
+  const a=$('aud');
+  if(b.audio){a.src=b.audio;a.style.display='block'}else{a.removeAttribute('src');a.style.display='none'}
+  destroy();
+  msg('বই লোড হচ্ছে…<div class="pg"><i id="pgi"></i></div>');
+  try{
+    const data=await fetchPdf(b.link,p=>{const i=$('pgi');if(i)i.style.width=(p*100)+'%'});
+    if(my!==token)return;
+    pdf=await pdfjsLib.getDocument({data}).promise;
+    total=pdf.numPages;
+    const p1=await pdf.getPage(1),vp=p1.getViewport({scale:1});
+    const W=vp.width,H=vp.height;
+    const book=$('book');book.innerHTML='';
+    for(let i=0;i<total;i++){
+      const d=document.createElement('div');d.className='page';
+      if(i===0||i===total-1)d.dataset.density='hard';
+      const c=document.createElement('canvas');d.appendChild(c);book.appendChild(d);
+    }
+    window._pw=W;window._ph=H;
+    flip=new St.PageFlip(book,{
+      width:Math.round(W),height:Math.round(H),size:'stretch',
+      minWidth:180,maxWidth:1400,minHeight:240,maxHeight:2000,
+      showCover:true,usePortrait:true,mobileScrollSupport:false,
+      maxShadowOpacity:.4,flippingTime:600,drawShadow:true
+    });
+    flip.loadFromHTML(book.querySelectorAll('.page'));
+    flip.on('flip',e=>{sync(e.data);renderAround(e.data)});
+    flip.on('changeOrientation',()=>renderAround(flip.getCurrentPageIndex()));
+    $('rng').max=total;$('rng').value=1;
+    msg('');sync(0);renderAround(0);
+  }catch(err){
+    if(my!==token)return;
+    msg(`বইটি এখানে খোলা গেল না।<br><small>(ব্রাউজার সরাসরি ফাইল পড়তে দেয়নি — প্রক্সি লাগবে)</small><br><br><a href="${b.link}" target="_blank" rel="noopener">নতুন ট্যাবে খুলুন / ডাউনলোড</a>`);
+  }
+}
+
+function destroy(){
+  try{flip&&flip.destroy()}catch(e){}
+  flip=null;pdf&&pdf.destroy&&pdf.destroy();pdf=null;rendered.clear();total=0;
+  const old=$('book'),n=document.createElement('div');n.id='book';old.replaceWith(n);
+  $('pn').textContent='–';
+}
+
+async function renderPage(i){
+  if(!pdf||i<0||i>=total||rendered.has(i))return;
+  rendered.add(i);
+  const my=token,pg=await pdf.getPage(i+1);
+  const base=pg.getViewport({scale:1}),sc=Math.min(2.2,1100/base.width*(window.devicePixelRatio>1?1.3:1));
+  const vp=pg.getViewport({scale:sc});
+  const c=document.querySelectorAll('#book .page canvas')[i];
+  if(!c||my!==token)return;
+  c.width=vp.width;c.height=vp.height;
+  await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+}
+function renderAround(i){for(let k=i-2;k<=i+5;k++)renderPage(k)}
+
+function sync(idx){
+  const n=idx+1;
+  $('pn').textContent=n+' / '+total;$('rng').value=Math.min(n,total);
+}
+
+$('bNext').onclick=()=>flip&&flip.flipNext();
+$('bPrev').onclick=()=>flip&&flip.flipPrev();
+$('rng').oninput=e=>{if(flip){const i=+e.target.value-1;flip.turnToPage(i);sync(i);renderAround(i)}};
+$('bClose').onclick=closeReader;
+function closeReader(){
+  token++;exitFs();unrot();$('aud').pause();
+  $('reader').classList.remove('open');document.body.style.overflow='';destroy();
+}
+document.addEventListener('keydown',e=>{
+  if(!$('reader').classList.contains('open'))return;
+  if(e.key==='ArrowLeft')flip&&flip.flipPrev();
+  if(e.key==='ArrowRight')flip&&flip.flipNext();
+  if(e.key==='Escape'&&!document.fullscreenElement)closeReader();
+});
+
+/* ফুল স্ক্রিন */
+const R=$('reader');
+const isFs=()=>document.fullscreenElement||document.webkitFullscreenElement;
+async function enterFs(){try{if(R.requestFullscreen)await R.requestFullscreen();else if(R.webkitRequestFullscreen)R.webkitRequestFullscreen()}catch(e){}}
+async function exitFs(){try{if(isFs()){document.exitFullscreen?await document.exitFullscreen():document.webkitExitFullscreen()}}catch(e){}
+  try{screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock()}catch(e){}}
+$('bFull').onclick=()=>isFs()?exitFs():enterFs();
+
+/* ল্যান্ডস্কেপ */
+function unrot(){R.classList.remove('rot');relayout()}
+function relayout(){setTimeout(()=>{try{flip&&flip.update()}catch(e){}},250)}
+$('bLand').onclick=async()=>{
+  if(R.classList.contains('rot')){unrot();return}
+  const portrait=window.innerHeight>window.innerWidth;
+  if(!portrait){ // আগে থেকেই আড়াআড়ি হলে পোর্ট্রেটে ফেরার সুযোগ
+    try{screen.orientation.lock('portrait')}catch(e){}return;
+  }
+  if(!isFs())await enterFs();
+  try{await screen.orientation.lock('landscape');relayout();return}catch(e){}
+  // লক সাপোর্ট না থাকলে (আইফোন) – পেজ নিজে ঘুরিয়ে দেখানো
+  R.classList.add('rot');relayout();
+};
+document.addEventListener('fullscreenchange',()=>{if(!isFs()){try{screen.orientation.unlock()}catch(e){}}relayout()});
+window.addEventListener('resize',relayout);
+window.addEventListener('orientationchange',()=>{unrot()});
+
+loadSheet();
+</script>
+</body>
+</html>
