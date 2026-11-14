@@ -35,7 +35,7 @@ header h1{margin:0 0 10px;font-size:20px;font-weight:700}
 .ib{background:#2f3a35;color:#fff;border:0;border-radius:8px;width:38px;height:38px;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
 .ib:active{background:var(--brand)}
 #stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
-#book{width:100%;height:100%}
+#book{width:100%;height:100%;touch-action:none}
 .page{background:#fff;overflow:hidden}
 .page canvas{width:100%;height:100%;display:block}
 #msg{position:absolute;color:#fff;text-align:center;padding:20px;max-width:420px;line-height:1.6}
@@ -147,15 +147,32 @@ $('cat').addEventListener('change',apply);
 let pdf=null,flip=null,rendered=new Set(),total=0,token=0,curBook=null,curBlob=null,hideT=null;
 
 /* বার অটো-হাইড: ট্যাপ/মুভ করলে ফের আসে, ৩ সেকেন্ডে লুকায় → বই পুরো স্ক্রিনে */
-function showBars(){
-  $('bar').classList.remove('hide');$('foot').classList.remove('hide');
+let flipping=false,tap=null;
+const inFs=()=>!!(document.fullscreenElement||document.webkitFullscreenElement)||$('reader').classList.contains('rot');
+function hideBars(){
   clearTimeout(hideT);
-  hideT=setTimeout(()=>{
-    if($('msg').style.display==='block')return;
-    $('bar').classList.add('hide');$('foot').classList.add('hide');
-  },3000);
+  if($('msg').style.display==='block')return;          // লোড/এরর মেসেজ থাকলে বার থাকবে
+  $('bar').classList.add('hide');$('foot').classList.add('hide');
 }
-['pointerdown','pointermove','touchstart'].forEach(ev=>$('reader').addEventListener(ev,showBars,{passive:true}));
+function showBars(){
+  if(flipping)return;                                   // পেজ ফ্লিপের সময় বার আসবে না
+  $('bar').classList.remove('hide');$('foot').classList.remove('hide');
+  clearTimeout(hideT);hideT=setTimeout(hideBars,3000);
+}
+const barsAuto=()=>inFs()?hideBars():showBars();
+// ফুল স্ক্রিনের বাইরে: ছুঁলে বার আসে
+['pointerdown','pointermove'].forEach(ev=>$('reader').addEventListener(ev,()=>{if(!inFs())showBars()},{passive:true}));
+// ফুল স্ক্রিনে: শুধু স্ক্রিনের উপরের অংশে ট্যাপ করলে বার আসে
+const localY=(cx,cy)=>$('reader').classList.contains('rot')?window.innerWidth-cx:cy;
+$('reader').addEventListener('pointerdown',e=>{tap={x:e.clientX,y:e.clientY,t:Date.now(),el:e.target}},{passive:true});
+$('reader').addEventListener('pointerup',e=>{
+  const t=tap;tap=null;
+  if(!t||!inFs()||flipping)return;
+  if(Math.hypot(e.clientX-t.x,e.clientY-t.y)>12||Date.now()-t.t>500)return;   // সোয়াইপ/লং প্রেস নয়
+  if(t.el.closest&&t.el.closest('#bar,#foot'))return;
+  const on=!$('bar').classList.contains('hide');
+  if(localY(t.x,t.y)<90)showBars();else if(on)hideBars();
+});
 
 function saveBlob(blob,name){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
@@ -206,7 +223,7 @@ async function openBook(b){
   const a=$('aud');
   if(b.audio){a.src=b.audio;a.style.display='block';$('bDlAud').style.display='flex'}
   else{a.removeAttribute('src');a.style.display='none';$('bDlAud').style.display='none'}
-  destroy();showBars();
+  destroy();barsAuto();
   msg('বই লোড হচ্ছে…<div class="pg"><i id="pgi"></i></div>');
   try{
     const data=await fetchPdf(b.link,p=>{const i=$('pgi');if(i)i.style.width=(p*100)+'%'});
@@ -231,9 +248,13 @@ async function openBook(b){
     });
     flip.loadFromHTML(book.querySelectorAll('.page'));
     flip.on('flip',e=>{sync(e.data);renderAround(e.data)});
+    flip.on('changeState',e=>{
+      if(e.data==='user_fold'||e.data==='flipping'){flipping=true;hideBars()}
+      else if(e.data==='read')flipping=false;
+    });
     flip.on('changeOrientation',()=>renderAround(flip.getCurrentPageIndex()));
     $('rng').max=total;$('rng').value=1;
-    msg('');sync(0);renderAround(0);showBars();
+    msg('');sync(0);renderAround(0);barsAuto();
   }catch(err){
     if(my!==token)return;
     msg(`বইটি এখানে খোলা গেল না।<br><small>(ব্রাউজার সরাসরি ফাইল পড়তে দেয়নি — প্রক্সি লাগবে)</small><br><br><a href="${b.link}" target="_blank" rel="noopener">নতুন ট্যাবে খুলুন / ডাউনলোড</a>`);
@@ -242,7 +263,7 @@ async function openBook(b){
 
 function destroy(){
   try{flip&&flip.destroy()}catch(e){}
-  flip=null;pdf&&pdf.destroy&&pdf.destroy();pdf=null;rendered.clear();total=0;
+  flip=null;flipping=false;pdf&&pdf.destroy&&pdf.destroy();pdf=null;rendered.clear();total=0;
   const old=$('book'),n=document.createElement('div');n.id='book';old.replaceWith(n);
   $('pn').textContent='–';
 }
@@ -289,7 +310,7 @@ async function exitFs(){try{if(isFs()){document.exitFullscreen?await document.ex
 $('bFull').onclick=()=>isFs()?exitFs():enterFs();
 
 /* ল্যান্ডস্কেপ */
-function unrot(){R.classList.remove('rot');relayout()}
+function unrot(){R.classList.remove('rot');relayout();barsAuto()}
 function relayout(){setTimeout(()=>{try{flip&&flip.update()}catch(e){}},250)}
 $('bLand').onclick=async()=>{
   if(R.classList.contains('rot')){unrot();return}
@@ -300,9 +321,11 @@ $('bLand').onclick=async()=>{
   if(!isFs())await enterFs();
   try{await screen.orientation.lock('landscape');relayout();return}catch(e){}
   // লক সাপোর্ট না থাকলে (আইফোন) – পেজ নিজে ঘুরিয়ে দেখানো
-  R.classList.add('rot');relayout();
+  R.classList.add('rot');relayout();barsAuto();
 };
-document.addEventListener('fullscreenchange',()=>{if(!isFs()){try{screen.orientation.unlock()}catch(e){}}relayout()});
+const onFsChange=()=>{if(!isFs()){try{screen.orientation.unlock()}catch(e){}}relayout();barsAuto()};
+document.addEventListener('fullscreenchange',onFsChange);
+document.addEventListener('webkitfullscreenchange',onFsChange);
 window.addEventListener('resize',relayout);
 window.addEventListener('orientationchange',()=>{unrot()});
 
