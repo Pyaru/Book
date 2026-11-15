@@ -206,11 +206,22 @@ const SHEET_ID   = '1A6uF_E2i0Jrnz9TpP2IVfJb26QkVJbbYtZFoPWPzSa4';   // শি�
 const SHEET_NAME = 'Books';                      // ট্যাবের নাম
 const PROXY_URL  = 'https://script.google.com/macros/s/AKfycbwN4zw8NssANxMCORG_zOcgmSPx-tHnFO1M9zXMwh9sW6FolsIQu81G5fQtcL5hzSAl/exec';                          // Apps Script প্রক্সির /exec লিংক (CORS + জনপ্রিয় বইয়ের গণনা)
 const NEW_COUNT  = 10;                          // শিটের শেষ কতটা বই "নতুন" ধরা হবে
+// শিটের ক্যাটাগরি (বাঁয়ে) → পেজে যে নামে দেখাবে (ডানে)। বড়/ছোট হাতের অক্ষর কোনো ব্যাপার না।
+// তালিকায় না থাকা ক্যাটাগরি শিটের নামেই দেখাবে। ড্রপডাউনে এই ক্রমেই আসবে।
+const CAT_LABELS = {
+  'bro':           'ইসলামী ভাইদের বয়ান',
+  'bro (older)':   'ইসলামী ভাইদের বয়ান (পুরাতন)',
+  'event':         'ওভারসিজ ইভেন্টের বয়ান',
+  'event (older)': 'ইভেন্টের বয়ান (পুরাতন)',
+  'juma':          'জুমার বয়ান',
+  'sis':           'ইসলামী বোনদের বয়ান',
+  'sis (older)':   'ইসলামী বোনদের বয়ান (পুরাতন)'
+};
 // মেনুর "যোগাযোগ"-এ যা দেবেন সেটাই দেখাবে; ফাঁকা রাখলে ওই লাইন আসবে না
 const CONTACT = {
-  whatsapp: '96897657955',   // দেশের কোডসহ নম্বর, শুধু সংখ্যা। যেমন 96891234567
+  whatsapp: '96897657655',   // দেশের কোডসহ নম্বর, শুধু সংখ্যা। যেমন 96891234567
   email:    'pearu86@gmail.com',   // যেমন info@example.com
-  link:     'https://www.facebook.com/share/19xhQV4F9g'    // ফেসবুক পেজ / ওয়েবসাইট ইত্যাদির লিংক
+  link:     'https://www.facebook.com/share/19dBFaFHp9/'    // ফেসবুক পেজ / ওয়েবসাইট ইত্যাদির লিংক
 };
 /* ================================= */
 
@@ -357,7 +368,7 @@ function emptyMsg(){
 }
 function pool(){
   const by=BYLINK;
-  if(mode==='new')return books.slice(-NEW_COUNT).reverse();
+  if(mode==='new')return books.filter(b=>b.isNew);        // books আগেই নতুন-আগে সাজানো
   if(mode==='top')return Array.isArray(TOP)?TOP.map(x=>by.get(x.k)).filter(Boolean):[];
   if(mode==='rd')return Object.entries(LP).sort((a,b)=>b[1].ts-a[1].ts).map(([l])=>by.get(l)).filter(Boolean);
   if(mode==='fav'){const s=new Set(FAV);return books.filter(b=>s.has(b.link))}
@@ -368,17 +379,27 @@ function pool(){
 }
 
 /* ===== শিট লোড ===== */
+const catKey=c=>String(c||'').trim().toLowerCase().replace(/\s+/g,' ');
+const CATMAP=Object.fromEntries(Object.entries(CAT_LABELS).map(([k,v])=>[catKey(k),v]));
+const catLabel=c=>CATMAP[catKey(c)]||c;
 function setBooks(rows){
-  books=rows;
-  books.forEach((b,i)=>{
-    b.hay=norm(b.name+' '+b.cat+' '+b.topics);b.words=b.hay.split(' ');
-    b.id=hid(b.link);b.isNew=books.length>NEW_COUNT&&i>=books.length-NEW_COUNT;
+  const n=rows.length;
+  rows.forEach((b,i)=>{
+    b.isNew=n>NEW_COUNT&&i>=n-NEW_COUNT;                 // শিটের শেষ ১০টা (উল্টানোর আগে ঠিক করা)
+    b.catLabel=catLabel(b.cat);
+    b.hay=norm(b.name+' '+b.cat+' '+b.catLabel+' '+b.topics);b.words=b.hay.split(' ');
+    b.id=hid(b.link);
   });
+  books=rows.slice().reverse();                          // শিটের শেষ বই সবার আগে, প্রথম বই সবার শেষে
   BYLINK=new Map(books.map(b=>[b.link,b]));
   $('cat').innerHTML='<option value="">সব ক্যাটাগরি</option>';
-  [...new Set(books.map(b=>b.cat).filter(Boolean))].sort().forEach(c=>{
-    const o=document.createElement('option');o.value=c;o.textContent=c;$('cat').appendChild(o);
-  });
+  const order=Object.keys(CATMAP);
+  [...new Set(books.map(b=>b.cat).filter(Boolean))]
+    .sort((a,b)=>{
+      const x=order.indexOf(catKey(a)),y=order.indexOf(catKey(b));
+      if(x>=0&&y>=0)return x-y;if(x>=0)return -1;if(y>=0)return 1;return a.localeCompare(b,'bn');
+    })
+    .forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=catLabel(c);$('cat').appendChild(o)});
 }
 async function loadSheet(){
   let rows=null,fromCache=false;
@@ -443,7 +464,7 @@ function more(){
     else if(mode==='rd'&&LP[b.link])sub.push('📖 পৃষ্ঠা '+LP[b.link].page+' / '+LP[b.link].total);
     else if(mode==='top'&&TOPV[b.link])sub.push('👁 '+TOPV[b.link]+' বার পড়া');
     else if(mode==='off'){const o=OFF.find(z=>z.link===b.link);if(o)sub.push('📥 '+(o.size/1048576).toFixed(1)+' MB')}
-    if(b.cat)sub.push(b.cat);
+    if(b.cat)sub.push(b.catLabel);
     if(sub.length){const c=document.createElement('div');c.className='c';c.textContent=sub.join(' • ');t.appendChild(c)}
     const fv=d.querySelector('.fv');fv.dataset.link=b.link;paintHeart(fv);
     fv.onclick=e=>{e.stopPropagation();toggleFav(b);if(mode==='fav')apply()};
