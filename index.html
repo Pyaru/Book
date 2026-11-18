@@ -28,7 +28,32 @@ header h1{margin:0 0 10px;font-size:20px;font-weight:700}
 #types button{flex:none;background:rgba(255,255,255,.16);color:#fff;border:1px solid transparent;border-radius:999px;padding:6px 12px;font:inherit;font-size:14px;cursor:pointer;white-space:nowrap}
 #types button.on{background:#fff;color:var(--brand);font-weight:600}
 #types i{font-style:normal;font-size:12px;opacity:.75;margin-left:2px}
-.aud-ic{margin-right:4px}
+.ai{flex:none;font-size:18px;line-height:1;padding:4px 2px}
+/* বই / কুরআন ট্যাব */
+#views{display:flex;gap:6px;margin-bottom:10px}
+#views button{flex:1;background:rgba(255,255,255,.16);color:#fff;border:0;border-radius:10px;padding:8px 6px;font:inherit;font-size:15px;font-weight:600;cursor:pointer}
+#views button.on{background:#fff;color:var(--brand)}
+#qtabs{display:none;gap:6px;margin-top:10px}
+#qtabs button{flex:none;background:rgba(255,255,255,.16);color:#fff;border:1px solid transparent;border-radius:999px;padding:6px 14px;font:inherit;font-size:14px;cursor:pointer;white-space:nowrap}
+#qtabs button.on{background:#fff;color:var(--brand);font-weight:600}
+#qtabs i{font-style:normal;font-size:12px;opacity:.75;margin-left:2px}
+body.vq #qtabs{display:flex}
+body.vq #cat,body.vq #types,body.vq #stats,body.vq #resumeBox{display:none}
+.st[data-go]{cursor:pointer}
+.st small{display:block;font-size:11px;color:var(--mute)}
+.qn{flex:none;width:36px;height:36px;border-radius:50%;background:#e7f3ed;color:var(--brand);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.qhero{background:linear-gradient(135deg,var(--brand),#138a5f);color:#fff;border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px}
+.qhero .qi{font-size:30px;line-height:1}
+.qhero b{display:block;font-size:18px}
+.qhero small{opacity:.85}
+.qh{font-weight:700;color:var(--brand);margin:14px 2px 8px;font-size:15px}
+#audSel{height:34px;border-radius:8px;border:0;background:#2f3a35;color:#fff;font:inherit;font-size:13px;padding:0 6px;max-width:34vw}
+#stats{max-width:900px;margin:0 auto;padding:10px 12px 0}
+#stats:empty{display:none;padding:0}
+.stg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.st{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;text-align:center}
+.st b{display:block;font-size:20px;color:var(--brand);line-height:1.2}
+.st span{font-size:12px;color:var(--mute)}
 #resumeBox{max-width:900px;margin:0 auto;padding:10px 12px 0}
 #resumeBox:empty{padding:0}
 .resume{background:linear-gradient(135deg,var(--brand),#138a5f);color:#fff;border-radius:14px;padding:14px 16px;cursor:pointer}
@@ -117,7 +142,7 @@ audio{height:34px;max-width:42vw}
 #bFav.on{color:#ff7aa2}
 #bar{flex-wrap:wrap}
 #bar .title{flex:1 1 60px;min-width:60px}
-@media (max-width:700px){#aud,#bDlPdf,#bDlAud{order:1}#aud{flex:1 1 140px;max-width:none}}
+@media (max-width:700px){#aud,#audSel,#bDlPdf,#bDlAud{order:1}#aud{flex:1 1 140px;max-width:none}}
 
 /* iOS fallback: rotate whole reader */
 #reader.rot{width:100vh;height:100vw;inset:auto;top:0;left:100vw;transform-origin:top left;transform:rotate(90deg)}
@@ -129,9 +154,17 @@ audio{height:34px;max-width:42vw}
     <h1>📚 মাকতাবা – অনলাইন পাঠাগার</h1>
     <button class="menu" id="bMenu" aria-label="মেনু"><svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
   </div>
+  <div id="views">
+    <button data-v="books" class="on">📚 বই</button>
+    <button data-v="quran">📖 কুরআন</button>
+  </div>
   <div class="sbox">
     <input id="q" type="search" placeholder="বইয়ের নাম লিখে খুঁজুন…" autocomplete="off">
     <select id="cat"><option value="">সব ক্যাটাগরি</option></select>
+  </div>
+  <div id="qtabs">
+    <button data-s="surah" class="on">সূরা <i></i></button>
+    <button data-s="para">পারা <i></i></button>
   </div>
   <div id="types">
     <button data-t="" class="on">সব <i></i></button>
@@ -141,6 +174,7 @@ audio{height:34px;max-width:42vw}
   <div id="mode"><span id="modeLbl"></span><button id="modeX">✕ সব বই</button></div>
   <div id="count">লোড হচ্ছে…</div>
 </header>
+<div id="stats"></div>
 <div id="resumeBox"></div>
 <div id="list"></div>
 
@@ -149,6 +183,7 @@ audio{height:34px;max-width:42vw}
   <div class="dh"><b>মেনু</b><button id="dClose" aria-label="বন্ধ">✕</button></div>
   <nav>
     <button data-m="all"><span>🏠</span>সব বই</button>
+    <button id="mQuran"><span>🕌</span>কুরআন</button>
     <button data-m="new"><span>🆕</span>নতুন বই</button>
     <button data-m="top"><span>🔥</span>জনপ্রিয় বই</button>
     <button data-m="rd"><span>📖</span>সম্প্রতি পড়া<i id="nrd"></i></button>
@@ -175,6 +210,7 @@ audio{height:34px;max-width:42vw}
     <button class="ib" id="bBm" title="এই পৃষ্ঠায় বুকমার্ক">🔖</button>
     <button class="ib" id="bSet" title="পড়ার সেটিং">⚙</button>
     <audio id="aud" controls preload="none" style="display:none"></audio>
+    <select id="audSel" style="display:none" aria-label="অডিও বাছুন"></select>
     <button class="ib txt" id="bDlPdf" title="বই ডাউনলোড">⬇ PDF</button>
     <button class="ib txt" id="bDlAud" title="অডিও ডাউনলোড" style="display:none">⬇ অডিও</button>
     <button class="ib" id="bLand" title="ল্যান্ডস্কেপ">⟳</button>
@@ -218,6 +254,9 @@ const SHEET_NAME = 'Books';                      // ট্যাবের না
 const PROXY_URL  = 'https://script.google.com/macros/s/AKfycbwN4zw8NssANxMCORG_zOcgmSPx-tHnFO1M9zXMwh9sW6FolsIQu81G5fQtcL5hzSAl/exec';                          // Apps Script প্রক্সির /exec লিংক (জনপ্রিয় বইয়ের গণনা + শেষ ভরসার প্রক্সি)
 const FAST_PROXY = '';                          // Cloudflare Worker লিংক (worker.js) — CORS আটকালে এটাই সবচেয়ে দ্রুত। না থাকলে ফাঁকা রাখুন
 const NEW_COUNT  = 10;                          // শিটের শেষ কতটা বই "নতুন" ধরা হবে
+// কুরআনের শিট: ফাঁকা রাখলে উপরের SHEET_ID-র ভেতরেই QURAN_SHEET_NAME নামের ট্যাব ধরা হবে
+const QURAN_SHEET_ID   = '1A6uF_E2i0Jrnz9TpP2IVfJb26QkVJbbYtZFoPWPzSa4';                    // কুরআনের আলাদা ফাইল হলে তার আইডি
+const QURAN_SHEET_NAME = 'alquran';               // কুরআনের ট্যাবের নাম (হুবহু)
 // শিটের ক্যাটাগরি (বাঁয়ে) → পেজে যে নামে দেখাবে (ডানে)। বড়/ছোট হাতের অক্ষর কোনো ব্যাপার না।
 // তালিকায় না থাকা ক্যাটাগরি শিটের নামেই দেখাবে। ড্রপডাউনে এই ক্রমেই আসবে।
 const CAT_LABELS = {
@@ -292,6 +331,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/p
 const $=id=>document.getElementById(id);
 const BASE=location.href.split(/[?#]/)[0];
 let books=[],shown=0,filtered=[],BYLINK=new Map();
+let qItems=[],ALLB=[],QR=null;       // QR: null=লোড হচ্ছে, false=ব্যর্থ, নইলে {full,para,surah,all}
+let view='books',qsec='surah';
+function rebuildIndex(){ALLB=books.concat(qItems);BYLINK=new Map(ALLB.map(b=>[b.link,b]))}
 const PAGE_SIZE=40;
 
 /* ===== সেভ করা তালিকা (এই ফোনের ব্রাউজারে থাকে) ===== */
@@ -351,7 +393,7 @@ async function fetchTop(){
   }catch(e){TOP=false}
 }
 function hit(b){
-  if(!PROXY_URL)return;
+  if(!PROXY_URL||b.q)return;                             // কুরআনের ফাইলের গণনা রাখা হয় না
   const k='h_'+b.link;
   try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
   fetch(PROXY_URL+'?a=hit&k='+encodeURIComponent(b.link)+'&n='+encodeURIComponent(b.name),{mode:'no-cors',keepalive:true}).catch(()=>{});
@@ -383,8 +425,8 @@ function pool(){
   if(mode==='new')return books.filter(b=>b.isNew);        // books আগেই নতুন-আগে সাজানো
   if(mode==='top')return Array.isArray(TOP)?TOP.map(x=>by.get(x.k)).filter(Boolean):[];
   if(mode==='rd')return Object.entries(LP).sort((a,b)=>b[1].ts-a[1].ts).map(([l])=>by.get(l)).filter(Boolean);
-  if(mode==='fav'){const s=new Set(FAV);return books.filter(b=>s.has(b.link))}
-  if(mode==='bm')return books.filter(b=>BM[b.link]).sort((a,b)=>BM[b.link].ts-BM[a.link].ts);
+  if(mode==='fav'){const s=new Set(FAV);return ALLB.filter(b=>s.has(b.link))}
+  if(mode==='bm')return ALLB.filter(b=>BM[b.link]).sort((a,b)=>BM[b.link].ts-BM[a.link].ts);
   if(mode==='dl')return DL.map(d=>by.get(d.link)).filter(Boolean);
   if(mode==='off')return OFF.map(o=>by.get(o.link)).filter(Boolean);
   return books;
@@ -399,6 +441,7 @@ function setBooks(rows){
   rows.forEach((b,i)=>{
     b.isNew=n>NEW_COUNT&&i>=n-NEW_COUNT;                 // শিটের শেষ ১০টা (উল্টানোর আগে ঠিক করা)
     b.catLabel=catLabel(b.cat);
+    b.audios=b.audio?[{label:'অডিও',url:b.audio}]:[];
     b.hay=norm(b.name+' '+b.cat+' '+b.catLabel+' '+b.topics);b.words=b.hay.split(' ');
     b.id=hid(b.link);
   });
@@ -406,7 +449,7 @@ function setBooks(rows){
   [books[0]&&books[0].link,FAST_PROXY].forEach(u=>{       // সংযোগ আগে থেকেই তৈরি রাখা
     try{if(!u)return;const l=document.createElement('link');l.rel='preconnect';l.href=new URL(u).origin;l.crossOrigin='';document.head.appendChild(l)}catch(e){}
   });
-  BYLINK=new Map(books.map(b=>[b.link,b]));
+  rebuildIndex();
   $('cat').innerHTML='<option value="">সব ক্যাটাগরি</option>';
   const order=Object.keys(CATMAP);
   [...new Set(books.map(b=>b.cat).filter(Boolean))]
@@ -433,16 +476,102 @@ async function loadSheet(){
     $('count').textContent='শিট লোড হয়নি। শিটের শেয়ারিং "Anyone with the link – Viewer" করা আছে কি না, আর SHEET_ID/SHEET_NAME ঠিক আছে কি না দেখুন।';
     return;
   }
-  setBooks(rows);apply();
+  setBooks(rows);refreshView();
   if(fromCache)toast('ইন্টারনেট নেই — সংরক্ষিত তালিকা দেখাচ্ছে');
+}
+
+/* ===== কুরআন সেকশন: শিটের গঠন =====
+   সারি ২–১১৫ সূরা: C=সূরার নাম, D=পিডিএফ, E=সূরার অডিও, G=অনুবাদ অডিও, I=তাফসীর অডিও
+   (ফাঁকা সারির পর) পারা: C=পারার নাম, D=পিডিএফ
+   (ফাঁকা সারির পর) শেষে সম্পূর্ণ কুরআন: লিংক C-তে (বা D-তে)
+   A, B, F, H কলাম আর তার নিচের সিরিয়াল পড়া হয় না। */
+async function gvizRows(id,sheet){
+  const url=`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&headers=1&sheet=${encodeURIComponent(sheet)}`;
+  const t=await (await fetch(url)).text();
+  const j=JSON.parse(t.substring(t.indexOf('(')+1,t.lastIndexOf(')')));
+  return j.table.rows.map(r=>(r.c||[]).map(c=>c&&c.v!=null?String(c.v).trim():''));
+}
+function parseQuran(rows){
+  const isUrl=s=>/^https?:\/\//i.test(s||'');
+  const g=(r,i)=>String((r&&r[i])||'').trim();
+  const blocks=[];let cur=null;
+  rows.forEach(r=>{                                       // ফাঁকা সারি দিয়ে অংশ আলাদা করা
+    if([2,3,4,6,8].some(i=>g(r,i))){if(!cur){cur=[];blocks.push(cur)}cur.push(r)}else cur=null;
+  });
+  const trimHead=b=>{let i=0;while(i<b.length&&![3,4,6,8].some(k=>isUrl(g(b[i],k))))i++;return b.slice(i)};   // হেডার সারি বাদ
+  let surah=trimHead(blocks[0]||[]),para=trimHead(blocks[1]||[]),rest=blocks.slice(2).flat();
+  const linkInC=r=>isUrl(g(r,2))&&!g(r,3);
+  rest=rest.concat(para.filter(linkInC));para=para.filter(r=>!linkInC(r));      // ফাঁকা সারি ছাড়া নিচে থাকলেও ধরা
+  if(!rest.length&&para.length>30)rest=[para.pop()];
+  const mk=(r,q,i)=>{
+    const link=g(r,3);if(!isUrl(link))return null;
+    const aud=[];
+    [[4,q==='surah'?'সূরার অডিও':'পারার অডিও'],[6,'অনুবাদ'],[8,'তাফসীর']].forEach(([c,l])=>{const u=g(r,c);if(isUrl(u))aud.push({label:l,url:u})});
+    return {q,no:i+1,name:g(r,2)||((q==='surah'?'সূরা ':'পারা ')+bn(i+1)),link,audio:aud[0]?aud[0].url:'',audios:aud};
+  };
+  const out=[];
+  surah.forEach((r,i)=>{const x=mk(r,'surah',i);if(x)out.push(x)});
+  para.forEach((r,i)=>{const x=mk(r,'para',i);if(x)out.push(x)});
+  const fr=rest.find(r=>isUrl(g(r,2))||isUrl(g(r,3)));
+  if(fr){
+    const cl=isUrl(g(fr,2)),aud=[4,6,8].map(c=>g(fr,c)).filter(isUrl).map(u=>({label:'অডিও',url:u}));
+    out.push({q:'full',no:0,name:(!cl&&g(fr,2))||'সম্পূর্ণ কুরআন',link:cl?g(fr,2):g(fr,3),audio:aud[0]?aud[0].url:'',audios:aud});
+  }
+  return out;
+}
+function setQuran(items){
+  const T={surah:'সূরা সুরা',para:'পারা',full:'কুরআন কোরআন সম্পূর্ণ পুরো'};
+  items.forEach(it=>{
+    it.cat='';it.topics='';it.isNew=false;it.id=hid(it.link);
+    it.catLabel='কুরআন • '+(it.q==='surah'?'সূরা':it.q==='para'?'পারা':'সম্পূর্ণ');
+    it.hay=norm(it.name+' '+T[it.q]);it.words=it.hay.split(' ');
+  });
+  qItems=items;
+  QR={full:items.find(x=>x.q==='full')||null,para:items.filter(x=>x.q==='para'),surah:items.filter(x=>x.q==='surah'),all:items};
+  rebuildIndex();updateBadges();refreshView();
+}
+async function loadQuran(){
+  if(!QURAN_SHEET_NAME){QR=false;return}
+  let items=null,cached=false;
+  try{
+    items=parseQuran(await gvizRows(QURAN_SHEET_ID||SHEET_ID,QURAN_SHEET_NAME));
+    if(items.length)store('mk_qcache',items);
+  }catch(e){items=load('mk_qcache',null);cached=!!items}
+  if(!items||!items.length){QR=false;refreshView();return}
+  setQuran(items);
+}
+function refreshView(){if(view==='quran')renderQuran();else if(books.length)apply()}
+async function init(){
+  const p1=loadSheet(),p2=loadQuran();
+  await p1;
   const id=new URLSearchParams(location.search).get('b');     // বইয়ের নিজস্ব লিংক
-  if(id){const b=books.find(x=>x.id===id);if(b)openBook(b)}
+  if(id){
+    let b=books.find(x=>x.id===id);
+    if(!b){await p2;b=ALLB.find(x=>x.id===id)}
+    if(b)openBook(b);
+  }
 }
 
 /* ===== তালিকা ===== */
+const bn=n=>Number(n).toLocaleString('bn-BD',{useGrouping:false});
+function renderStats(){
+  const box=$('stats');box.innerHTML='';
+  if(view!=='books'||mode!=='all'||$('q').value.trim()||$('cat').value||typeF||!books.length)return;   // শুধু হোমে, কিছু খোঁজার আগে
+  const items=[[bn(books.length),'📚 মোট বই',''],[bn(books.filter(b=>b.audio).length),'🎧 অডিওসহ বই','aud']];
+  if(QR&&QR.all.length){
+    const a=QR.all.reduce((s,x)=>s+x.audios.length,0);
+    items.push([bn(QR.all.length),'📖 কুরআনের পিডিএফ','quran',`পূর্ণ ${bn(QR.full?1:0)} • পারা ${bn(QR.para.length)} • সূরা ${bn(QR.surah.length)}`]);
+    if(a)items.push([bn(a),'🔊 কুরআনের অডিও','quran']);
+  }
+  box.innerHTML='<div class="stg">'+items.map(([n,l,go,sub])=>`<div class="st"${go?` data-go="${go}"`:''}><b>${n}</b><span>${l}</span>${sub?`<small>${sub}</small>`:''}</div>`).join('')+'</div>';
+}
+$('stats').onclick=e=>{
+  const t=e.target.closest&&e.target.closest('[data-go]');if(!t)return;
+  if(t.dataset.go==='aud'){typeF='aud';apply();window.scrollTo(0,0)}else setView('quran');
+};
 function renderResume(){
   const box=$('resumeBox');box.innerHTML='';
-  if(mode!=='all'||$('q').value.trim()||$('cat').value||!books.length)return;
+  if(view!=='books'||mode!=='all'||$('q').value.trim()||$('cat').value||!books.length)return;
   const e=Object.entries(LP).sort((a,b)=>b[1].ts-a[1].ts).find(([l])=>BYLINK.has(l));
   if(!e)return;
   const b=BYLINK.get(e[0]),m=e[1];
@@ -462,12 +591,12 @@ function apply(){
   // ধরন ফিল্টার: সংখ্যাগুলো সার্চ ও ক্যাটাগরি অনুযায়ী, ধরন বাছার আগের ফলাফল থেকে গোনা
   const nAud=res.filter(b=>b.audio).length;
   [['',res.length],['pdf',res.length-nAud],['aud',nAud]].forEach(([t,n])=>{
-    const bt=document.querySelector(`#types [data-t="${t}"]`);bt.querySelector('i').textContent=n;bt.classList.toggle('on',typeF===t);
+    const bt=document.querySelector(`#types [data-t="${t}"]`);bt.querySelector('i').textContent=bn(n);bt.classList.toggle('on',typeF===t);
   });
   if(typeF==='aud')res=res.filter(b=>b.audio);else if(typeF==='pdf')res=res.filter(b=>!b.audio);
   filtered=res;
-  shown=0;$('list').innerHTML='';updateBadges();renderResume();
-  $('count').textContent=`${filtered.length} টি বই`+(base.length!==filtered.length?` (মোট ${base.length})`:'')+(fz?' • কাছাকাছি ফলাফল':'');
+  shown=0;$('list').innerHTML='';updateBadges();renderStats();renderResume();
+  $('count').textContent=`${bn(filtered.length)} টি বই`+(base.length!==filtered.length?` (মোট ${bn(base.length)})`:'')+(fz?' • কাছাকাছি ফলাফল':'');
   if(!filtered.length){$('list').innerHTML=`<div class="empty">${(toks.length||cat||typeF)&&base.length?EMPTY.all:emptyMsg()}</div>`;return}
   more();
 }
@@ -485,10 +614,10 @@ function more(){
     else if(mode==='rd'&&LP[b.link])sub.push('📖 পৃষ্ঠা '+LP[b.link].page+' / '+LP[b.link].total);
     else if(mode==='top'&&TOPV[b.link])sub.push('👁 '+TOPV[b.link]+' বার পড়া');
     else if(mode==='off'){const o=OFF.find(z=>z.link===b.link);if(o)sub.push('📥 '+(o.size/1048576).toFixed(1)+' MB')}
-    if(b.audio)sub.push('🎧 অডিও');
-    if(b.cat)sub.push(b.catLabel);
+    if(b.cat||b.q)sub.push(b.catLabel);
     if(sub.length){const c=document.createElement('div');c.className='c';c.textContent=sub.join(' • ');t.appendChild(c)}
     const fv=d.querySelector('.fv');fv.dataset.link=b.link;paintHeart(fv);
+    if(b.audio){const a=document.createElement('span');a.className='ai';a.textContent='🎧';a.title='অডিও আছে';d.insertBefore(a,fv)}   // পিডিএফের সাথেই অডিও আইকন
     fv.onclick=e=>{e.stopPropagation();toggleFav(b);if(mode==='fav')apply()};
     d.onclick=()=>openBook(b,mode==='bm'&&BM[b.link]?BM[b.link].page:0);frag.appendChild(d);
   });
@@ -500,13 +629,84 @@ function more(){
 }
 let typeF='';      // ''=সব, 'pdf'=অডিও নেই, 'aud'=অডিও আছে
 document.querySelectorAll('#types [data-t]').forEach(b=>b.onclick=()=>{typeF=b.dataset.t;apply()});
-let tm;$('q').addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(apply,150)});
+let tm;$('q').addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(()=>view==='quran'?renderQuran():apply(),150)});
+
+/* ===== কুরআন সেকশনের তালিকা ===== */
+function qRow(it){
+  const d=document.createElement('div');d.className='item';
+  d.innerHTML='<div class="qn"></div><div class="t"></div><button class="fv" aria-label="ফেভারিট"></button><div class="go">›</div>';
+  d.children[0].textContent=bn(it.no);
+  const t=d.children[1];t.textContent=it.name;
+  const sub=[];
+  if(it.audios.length)sub.push(it.audios.map(a=>a.label).join(' • '));
+  if(LP[it.link])sub.push('📖 পৃষ্ঠা '+LP[it.link].page+' / '+LP[it.link].total);
+  if(sub.length){const c=document.createElement('div');c.className='c';c.textContent=sub.join('  |  ');t.appendChild(c)}
+  const fv=d.querySelector('.fv');fv.dataset.link=it.link;paintHeart(fv);
+  if(it.audios.length){const a=document.createElement('span');a.className='ai';a.textContent='🎧';a.title='অডিও আছে';d.insertBefore(a,fv)}
+  fv.onclick=e=>{e.stopPropagation();toggleFav(it)};
+  d.onclick=()=>openBook(it,0);
+  return d;
+}
+function qHero(it){
+  const d=document.createElement('div');d.className='qhero';
+  d.innerHTML='<div class="qi">📖</div><div><b></b><small>পুরো কুরআন একটি পিডিএফে</small></div>';
+  d.querySelector('b').textContent=it.name;
+  d.onclick=()=>openBook(it,0);return d;
+}
+function renderQuran(){
+  const list=$('list');list.innerHTML='';$('stats').innerHTML='';$('resumeBox').innerHTML='';
+  document.querySelectorAll('#qtabs [data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s===qsec));
+  if(QR===null){$('count').textContent='লোড হচ্ছে…';return}
+  if(QR===false||!QR.all.length){
+    $('count').textContent='';
+    list.innerHTML='<div class="empty">কুরআনের তালিকা লোড হয়নি।<br>QURAN_SHEET_ID ও QURAN_SHEET_NAME ঠিক আছে কি না, আর শিটের শেয়ারিং "Anyone with the link – Viewer" কি না দেখুন।</div>';
+    return;
+  }
+  const nAud=QR.all.reduce((s,x)=>s+x.audios.length,0);
+  document.querySelector('#qtabs [data-s="surah"] i').textContent=bn(QR.surah.length);
+  document.querySelector('#qtabs [data-s="para"] i').textContent=bn(QR.para.length);
+  const toks=norm($('q').value).split(' ').filter(Boolean);
+  const frag=document.createDocumentFragment();
+  if(!toks.length){                                     // খোঁজা ছাড়া: সম্পূর্ণ কুরআনের কার্ড + বাছাই করা ট্যাব
+    if(QR.full)frag.appendChild(qHero(QR.full));
+    (qsec==='para'?QR.para:QR.surah).forEach(it=>frag.appendChild(qRow(it)));
+    $('count').textContent=`পূর্ণ কুরআন ${bn(QR.full?1:0)} • পারা ${bn(QR.para.length)} • সূরা ${bn(QR.surah.length)}`+(nAud?` • অডিও ${bn(nAud)}`:'');
+  }else{                                                // খুঁজলে পারা ও সূরা দুটোতেই একসাথে
+    // সংখ্যা লিখলে শুধু ওই নম্বরের সূরা/পারা (২ লিখলে ১২ বা ২৫ নয়); লেখা হলে নামের যেকোনো অংশে মিলবে
+    const m1=(it,t)=>/^\d+$/.test(t)?(it.q!=='full'&&String(it.no)===t)||it.words.includes(t):it.hay.includes(t);
+    const groups=[['সম্পূর্ণ কুরআন',QR.full?[QR.full]:[]],['পারা',QR.para],['সূরা',QR.surah]];
+    let found=groups.map(([h,arr])=>[h,arr.filter(it=>toks.every(t=>m1(it,t)))]),fz=false;
+    if(!found.some(g=>g[1].length)){
+      found=groups.map(([h,arr])=>[h,arr.filter(it=>toks.every(t=>m1(it,t)||it.words.some(w=>near(w,t))))]);
+      fz=found.some(g=>g[1].length);
+    }
+    let n=0;
+    found.forEach(([h,arr])=>{if(!arr.length)return;n+=arr.length;frag.appendChild(Object.assign(document.createElement('div'),{className:'qh',textContent:h}));arr.forEach(it=>frag.appendChild(qRow(it)))});
+    $('count').textContent=`${bn(n)} টি ফলাফল`+(fz?' • কাছাকাছি ফলাফল':'');
+    if(!n)list.innerHTML='<div class="empty">কিছু পাওয়া যায়নি</div>';
+  }
+  list.appendChild(frag);
+}
+function syncViewUI(v){
+  view=v;document.body.classList.toggle('vq',v==='quran');
+  document.querySelectorAll('#views [data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  $('q').placeholder=v==='quran'?'সূরা বা পারার নাম / নম্বর লিখুন…':'বইয়ের নাম লিখে খুঁজুন…';
+}
+function setView(v){
+  syncViewUI(v);
+  $('q').value='';$('cat').value='';typeF='';mode='all';$('mode').style.display='none';
+  if(v==='quran')renderQuran();else apply();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('#views [data-v]').forEach(b=>b.onclick=()=>{if(b.dataset.v!==view)setView(b.dataset.v)});
+document.querySelectorAll('#qtabs [data-s]').forEach(b=>b.onclick=()=>{qsec=b.dataset.s;$('q').value='';renderQuran();window.scrollTo(0,0)});
 $('cat').addEventListener('change',apply);
 
 /* ===== মেনু ===== */
 function openMenu(){updateBadges();$('drawer').classList.add('open');$('ov').classList.add('open');$('drawer').setAttribute('aria-hidden','false')}
 function closeMenu(){$('drawer').classList.remove('open');$('ov').classList.remove('open');$('drawer').setAttribute('aria-hidden','true')}
 function setMode(m){
+  syncViewUI('books');                                   // কুরআন থেকে মেনুর কোনো তালিকায় গেলে বইয়ের ভিউতে ফেরা
   mode=m;$('q').value='';$('cat').value='';typeF='';
   $('mode').style.display=m==='all'?'none':'flex';$('modeLbl').textContent=MODES[m];
   if(m==='top'&&(TOP===null||TOP===false||Date.now()-TOPT>300000)){
@@ -517,6 +717,7 @@ function setMode(m){
 }
 $('bMenu').onclick=openMenu;$('ov').onclick=closeMenu;$('dClose').onclick=closeMenu;
 $('modeX').onclick=()=>setMode('all');
+$('mQuran').onclick=()=>{closeMenu();setView('quran')};
 document.querySelectorAll('#drawer [data-m]').forEach(b=>b.onclick=()=>{setMode(b.dataset.m);closeMenu()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
 
@@ -722,16 +923,21 @@ $('sShare').onclick=()=>{
   if(!curBook)return;
   shareLink(curBook.name,curBook.name+'\n— মাকতাবা',BASE+'?b='+curBook.id);
 };
+$('audSel').onchange=e=>{
+  const x=((curBook&&curBook.audios)||[])[+e.target.value];if(!x)return;
+  const a=$('aud');a.src=x.url;a.play().catch(()=>{});
+};
 $('bDlAud').onclick=async()=>{
-  if(!curBook||!curBook.audio)return;
+  const list=(curBook&&curBook.audios)||[],au=list[+$('audSel').value||0];
+  if(!au)return;
   recordDl(curBook);
   const btn=$('bDlAud'),old=btn.textContent;btn.textContent='⏳';
   try{
-    const r=await fetch(curBook.audio);if(!r.ok)throw 0;
+    const r=await fetch(au.url);if(!r.ok)throw 0;
     const b=await r.blob();
-    const ext=(curBook.audio.split('?')[0].match(/\.(mp3|m4a|wav|ogg|aac)$/i)||[,'mp3'])[1];
-    saveBlob(b,curBook.name+'.'+ext);
-  }catch(e){window.open(curBook.audio,'_blank')}   // সরাসরি না পারলে নতুন ট্যাবে
+    const ext=(au.url.split('?')[0].match(/\.(mp3|m4a|wav|ogg|aac)$/i)||[,'mp3'])[1];
+    saveBlob(b,curBook.name+(list.length>1?' - '+au.label:'')+'.'+ext);
+  }catch(e){window.open(au.url,'_blank')}   // সরাসরি না পারলে নতুন ট্যাবে
   btn.textContent=old;
 };
 
@@ -803,9 +1009,11 @@ async function openBook(b,startPage){
   if(!(history.state&&history.state.r)){try{history.pushState({r:1},'','?b='+b.id)}catch(e){}}
   $('rTitle').textContent=b.name;
   curBook=b;curBlob=null;setZoom(1);applyPref();$('sp').classList.remove('open');
-  const a=$('aud');
-  if(b.audio){a.src=b.audio;a.style.display='block';$('bDlAud').style.display='flex'}
+  const a=$('aud'),A=b.audios||[],sel=$('audSel');
+  if(A.length){a.src=A[0].url;a.style.display='block';$('bDlAud').style.display='flex'}
   else{a.removeAttribute('src');a.style.display='none';$('bDlAud').style.display='none'}
+  sel.innerHTML='';A.forEach((x,i)=>{const o=document.createElement('option');o.value=i;o.textContent=x.label;sel.appendChild(o)});
+  sel.style.display=A.length>1?'block':'none';          // একাধিক অডিও থাকলে (সূরা/অনুবাদ/তাফসীর) বাছাই করা যাবে
   destroy();barsAuto();paintReader();
   msg('বই লোড হচ্ছে…<div class="pg"><i id="pgi"></i></div><small id="via" style="opacity:.55"></small>');
   try{
@@ -892,7 +1100,7 @@ function doClose(){
   token++;exitFs();unrot();$('aud').pause();$('sp').classList.remove('open');
   $('reader').classList.remove('open');document.body.style.overflow='';destroy();setZoom(1);
   if(location.search){try{history.replaceState(null,'',BASE)}catch(e){}}
-  if(mode!=='all')apply();else renderResume();
+  if(view==='quran')renderQuran();else if(mode!=='all')apply();else renderResume();
   refreshHearts();updateBadges();
 }
 window.addEventListener('popstate',()=>{if($('reader').classList.contains('open'))doClose()});
@@ -932,7 +1140,7 @@ window.addEventListener('resize',relayout);
 window.addEventListener('orientationchange',()=>{unrot()});
 
 updateBadges();
-loadSheet();
+init();
 </script>
 </body>
 </html>
