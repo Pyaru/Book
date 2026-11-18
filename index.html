@@ -252,7 +252,7 @@ audio{height:34px;max-width:42vw}
 const SHEET_ID   = '1A6uF_E2i0Jrnz9TpP2IVfJb26QkVJbbYtZFoPWPzSa4';   // শিটের URL-এ /d/ এবং /edit-এর মাঝের অংশ
 const SHEET_NAME = 'Books';                      // ট্যাবের নাম
 const PROXY_URL  = 'https://script.google.com/macros/s/AKfycbwN4zw8NssANxMCORG_zOcgmSPx-tHnFO1M9zXMwh9sW6FolsIQu81G5fQtcL5hzSAl/exec';                          // Apps Script প্রক্সির /exec লিংক (জনপ্রিয় বইয়ের গণনা + শেষ ভরসার প্রক্সি)
-const FAST_PROXY = '';                          // Cloudflare Worker লিংক (worker.js) — CORS আটকালে এটাই সবচেয়ে দ্রুত। না থাকলে ফাঁকা রাখুন
+const FAST_PROXY = 'https://flat-boat-9073.pearu86.workers.dev';                          // Cloudflare Worker লিংক (worker.js) — CORS আটকালে এটাই সবচেয়ে দ্রুত। না থাকলে ফাঁকা রাখুন
 const NEW_COUNT  = 10;                          // শিটের শেষ কতটা বই "নতুন" ধরা হবে
 // কুরআনের শিট: ফাঁকা রাখলে উপরের SHEET_ID-র ভেতরেই QURAN_SHEET_NAME নামের ট্যাব ধরা হবে
 const QURAN_SHEET_ID   = '1A6uF_E2i0Jrnz9TpP2IVfJb26QkVJbbYtZFoPWPzSa4';                    // কুরআনের আলাদা ফাইল হলে তার আইডি
