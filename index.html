@@ -238,6 +238,7 @@ audio{height:34px;max-width:42vw}
     <h4>জুম</h4>
     <div class="row"><button id="zOut">−</button><button id="zVal">1×</button><button id="zIn">+</button></div>
     <div class="hint">পাতার মাঝখানে ডাবল ট্যাপ করলেও জুম হয়। জুম অবস্থায় আঙুল টেনে সরান, দুই আঙুলে পিঞ্চ করুন।</div>
+    <div class="row"><button id="sPg">📖 ২ পৃষ্ঠা</button></div>
     <div class="row"><button id="sSnd">🔊 পৃষ্ঠার শব্দ: চালু</button></div>
     <div class="row"><button id="sOff">📥 অফলাইনে সেভ করুন</button></div>
     <div class="row" style="margin-bottom:0"><button id="sShare">🔗 এই বইয়ের লিংক শেয়ার</button></div>
@@ -765,12 +766,20 @@ window.addEventListener('online',()=>toast('ইন্টারনেট ফি�
 let pdf=null,task=null,flip=null,rendered=new Set(),total=0,token=0,curBook=null,curBlob=null,hideT=null;
 
 /* পড়ার সেটিং: মোড + আলো */
+/* ১/২ পৃষ্ঠা: ফোনে (ছোট স্ক্রিন) ডিফল্ট ১ পৃষ্ঠা, বড় স্ক্রিনে ২ পৃষ্ঠা; পছন্দ ফোনে মনে থাকে */
+const isPhone=()=>Math.min(screen.width,screen.height)<600;
+const onePage=()=>PREF.pg?PREF.pg==='1':isPhone();
+function applyPage(){
+  $('sPg').textContent=onePage()?'📄 ১ পৃষ্ঠা (চাপলে ২ পৃষ্ঠা)':'📖 ২ পৃষ্ঠা (চাপলে ১ পৃষ্ঠা)';
+  if(flip){try{const st=flip.getSettings();st.minWidth=onePage()?6000:180;flip.update()}catch(e){}}
+}
 function applyPref(){
   $('stage').dataset.th=PREF.th;
   $('dim').style.opacity=((100-PREF.br)/100*0.75).toFixed(2);
   document.querySelectorAll('#sp [data-th]').forEach(b=>b.classList.toggle('on',b.dataset.th===PREF.th));
   $('br').value=PREF.br;
   const snd=PREF.snd!==false;                            // আগে সেভ করা সেটিংয়ে না থাকলে চালু ধরা হয়
+  applyPage();
   $('sSnd').textContent=snd?'🔊 পৃষ্ঠার শব্দ: চালু':'🔇 পৃষ্ঠার শব্দ: বন্ধ';$('sSnd').classList.toggle('on',snd);
 }
 document.querySelectorAll('#sp [data-th]').forEach(b=>b.onclick=()=>{PREF.th=b.dataset.th;store('mk_pref',PREF);applyPref()});
@@ -813,6 +822,10 @@ function flipSound(force){
   }catch(e){}
 }
 $('reader').addEventListener('pointerdown',()=>{ensureAC()},{passive:true});
+$('sPg').onclick=()=>{
+  PREF.pg=onePage()?'2':'1';store('mk_pref',PREF);applyPage();
+  try{renderAround(flip.getCurrentPageIndex())}catch(e){}
+};
 $('sSnd').onclick=()=>{
   PREF.snd=PREF.snd===false;store('mk_pref',PREF);applyPref();
   if(PREF.snd){lastSnd=0;flipSound(true)}                 // চালু করলে একবার শুনিয়ে দেওয়া
@@ -1096,7 +1109,7 @@ async function openBook(b,startPage){
     }
     flip=new St.PageFlip(book,{
       width:Math.round(W),height:Math.round(H),size:'stretch',
-      minWidth:180,maxWidth:1400,minHeight:240,maxHeight:2000,
+      minWidth:onePage()?6000:180,maxWidth:1400,minHeight:240,maxHeight:2000,
       showCover:true,usePortrait:true,mobileScrollSupport:false,disableFlipByClick:true,
       maxShadowOpacity:.4,flippingTime:600,drawShadow:true
     });
