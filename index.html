@@ -1064,8 +1064,10 @@ function destroy(){
   flip=null;flipping=false;
   try{task?task.destroy():pdf&&pdf.destroy()}catch(e){}   // চলমান ডাউনলোডও বন্ধ হয়ে যায়
   task=null;pdf=null;rendered.clear();total=0;
-  const old=$('book'),n=document.createElement('div');n.id='book';old.replaceWith(n);
-  $('pn').textContent='–';
+  // page-flip-এর destroy() নিজেই #book এলিমেন্টটা DOM থেকে সরিয়ে দেয়, তাই $('book') খুঁজে না নিয়ে #zw-এর ভেতরে নতুন করে বানানো হয়
+  const zw=$('zw');zw.innerHTML='';
+  const n=document.createElement('div');n.id='book';zw.appendChild(n);
+  $('pn').textContent='–';$('rng').max=1;$('rng').value=1;
 }
 
 async function renderPage(i){
