@@ -92,6 +92,10 @@ body.vq #cat,body.vq #types,body.vq #stats,body.vq #resumeBox{display:none}
 #stage[data-th="sepia"] .page{background:#f3e7cc}
 #msg{position:absolute;color:#fff;text-align:center;padding:20px;max-width:420px;line-height:1.6;z-index:3}
 #msg a{color:#7fe3b5}
+#msg .drd{margin-top:22px;padding:14px 12px;border-top:1px solid #ffffff26}
+#msg .drdh{font-size:13px;color:#e8c15c;margin-bottom:8px}
+#msg .drda{font-family:'Amiri','Scheherazade New','Noto Naskh Arabic',serif;font-size:21px;line-height:1.9;direction:rtl}
+#msg .drdb{font-size:12.5px;opacity:.7;margin-top:4px}
 #msg .pg{height:6px;background:#444;border-radius:3px;margin-top:12px;overflow:hidden}
 #msg .pg i{display:block;height:100%;width:0;background:#4cd698}
 #foot{position:absolute;bottom:0;left:0;right:0;z-index:3;display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(20,24,22,.88);color:#fff;font-size:13px;transition:opacity .25s}
@@ -273,7 +277,7 @@ const CAT_LABELS = {
 const CONTACT = {
   whatsapp: '96897657655',   // দেশের কোডসহ নম্বর, শুধু সংখ্যা। যেমন 96891234567
   email:    'pearu86@gmail.com',   // যেমন info@example.com
-  link:     'https://www.facebook.com/share/1D7nJii4Cq/'    // ফেসবুক পেজ / ওয়েবসাইট ইত্যাদির লিংক
+  link:     'https://www.facebook.com/share/19aWXxaar9/'    // ফেসবুক পেজ / ওয়েবসাইট ইত্যাদির লিংক
 };
 /* ================================= */
 
@@ -779,24 +783,33 @@ function ensureAC(){                                     // ফোনের ন�
   try{
     AC=AC||new (window.AudioContext||window.webkitAudioContext)();
     if(AC.state==='suspended')AC.resume();
+    loadFlip(AC);
   }catch(e){AC=null}
   return AC;
+}
+const FLIP_B64='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';
+let FLIPBUF=null,flipDec=false;
+function loadFlip(ctx){                                  // নিজস্ব রেকর্ড করা শব্দ একবার ডিকোড করে রাখা
+  if(flipDec)return;flipDec=true;
+  try{
+    const bin=atob(FLIP_B64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+    const r=ctx.decodeAudioData(u.buffer,x=>{FLIPBUF=x},()=>{});if(r&&r.catch)r.catch(()=>{});
+  }catch(e){}
 }
 function flipSound(force){
   if(!force&&(PREF.snd===false||!$('aud').paused))return;   // তিলাওয়াত/অডিও চলার সময় বাজবে না
   const now=Date.now();if(now-lastSnd<250)return;lastSnd=now;
   const ctx=force?(PREF.snd=true,ensureAC()):ensureAC();if(!ctx)return;
+  loadFlip(ctx);
   try{
-    if(!SNDBUF||SNDBUF.sampleRate!==ctx.sampleRate){       // কাগজ ওল্টানোর মতো: ছোট নয়েজ + দ্রুত মিলিয়ে যাওয়া
-      const len=Math.floor(ctx.sampleRate*0.3);SNDBUF=ctx.createBuffer(1,len,ctx.sampleRate);
-      const d=SNDBUF.getChannelData(0);
-      for(let i=0;i<len;i++){const p=i/len;d[i]=(Math.random()*2-1)*Math.pow(1-p,1.8)*Math.min(1,p*40);}
+    const t=ctx.currentTime,src=ctx.createBufferSource(),g=ctx.createGain();
+    if(FLIPBUF){src.buffer=FLIPBUF;g.gain.value=0.9}
+    else{                                                  // ডিকোড না হলে (বিরল) হালকা বিকল্প শব্দ
+      const len=Math.floor(ctx.sampleRate*0.25),bf=ctx.createBuffer(1,len,ctx.sampleRate),d=bf.getChannelData(0);
+      for(let i=0;i<len;i++){const p=i/len;d[i]=(Math.random()*2-1)*Math.pow(1-p,2)*Math.min(1,p*40)}
+      src.buffer=bf;g.gain.value=0.12;
     }
-    const t=ctx.currentTime,src=ctx.createBufferSource(),bp=ctx.createBiquadFilter(),g=ctx.createGain();
-    src.buffer=SNDBUF;bp.type='bandpass';bp.Q.value=0.8;
-    bp.frequency.setValueAtTime(900,t);bp.frequency.exponentialRampToValueAtTime(3800,t+0.25);
-    g.gain.setValueAtTime(0.22,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.3);
-    src.connect(bp);bp.connect(g);g.connect(ctx.destination);src.start(t);
+    src.connect(g);g.connect(ctx.destination);src.start(t);
   }catch(e){}
 }
 $('reader').addEventListener('pointerdown',()=>{ensureAC()},{passive:true});
@@ -977,6 +990,18 @@ $('bDlAud').onclick=async()=>{
   btn.textContent=old;
 };
 
+const DUROOD=[
+ ['اَللّٰهُمَّ صَلِّ عَلٰى مُحَمَّدٍ وَّعَلٰى اٰلِ مُحَمَّدٍ','হে আল্লাহ! মুহাম্মদ ﷺ ও তাঁর পরিবারের উপর রহমত বর্ষণ করুন।'],
+ ['صَلَّى اللهُ عَلٰى حَبِيْبِهٖ سَيِّدِنَا مُحَمَّدٍ وَّاٰلِهٖ وَسَلَّمَ','আল্লাহ তাঁর হাবীব, আমাদের নেতা মুহাম্মদ ﷺ ও তাঁর পরিবারের উপর রহমত ও শান্তি বর্ষণ করুন।'],
+ ['اَللّٰهُمَّ صَلِّ وَسَلِّمْ وَبَارِكْ عَلٰى سَيِّدِنَا مُحَمَّدٍ','হে আল্লাহ! আমাদের নেতা মুহাম্মদ ﷺ এর উপর রহমত, শান্তি ও বরকত নাযিল করুন।']
+];
+let drdT=null,drdI=0;
+function startDurood(){                                  // লোড চলার সময় দুরুদ শরীফ ঘুরিয়ে দেখানো
+  clearInterval(drdT);drdI=Math.floor(Math.random()*DUROOD.length);
+  const show=()=>{const a=$('drda'),b=$('drdb');if(!a||!b){clearInterval(drdT);return}
+    const d=DUROOD[drdI++%DUROOD.length];a.textContent=d[0];b.textContent=d[1]};
+  show();drdT=setInterval(show,5000);
+}
 function msg(html){$('msg').innerHTML=html;$('msg').style.display=html?'block':'none'}
 
 /* ===== দ্রুত লোড =====
@@ -1051,7 +1076,9 @@ async function openBook(b,startPage){
   sel.innerHTML='';A.forEach((x,i)=>{const o=document.createElement('option');o.value=i;o.textContent=x.label;sel.appendChild(o)});
   sel.style.display=A.length>1?'block':'none';          // একাধিক অডিও থাকলে (সূরা/অনুবাদ/তাফসীর) বাছাই করা যাবে
   destroy();barsAuto();paintReader();
-  msg('বই লোড হচ্ছে…<div class="pg"><i id="pgi"></i></div><small id="via" style="opacity:.55"></small>');
+  msg('বই লোড হচ্ছে…<div class="pg"><i id="pgi"></i></div><small id="via" style="opacity:.55"></small>'
+    +'<div class="drd"><div class="drdh">অপেক্ষার সময়টুকুতে দুরুদ শরীফ পাঠ করুন</div><div class="drda" id="drda"></div><div class="drdb" id="drdb"></div></div>');
+  startDurood();
   try{
     const doc=await loadDoc(b,my,
       p=>{const i=$('pgi');if(i)i.style.width=Math.min(100,p*100)+'%'},
