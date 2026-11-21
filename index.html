@@ -234,6 +234,7 @@ audio{height:34px;max-width:42vw}
     <h4>জুম</h4>
     <div class="row"><button id="zOut">−</button><button id="zVal">1×</button><button id="zIn">+</button></div>
     <div class="hint">পাতার মাঝখানে ডাবল ট্যাপ করলেও জুম হয়। জুম অবস্থায় আঙুল টেনে সরান, দুই আঙুলে পিঞ্চ করুন।</div>
+    <div class="row"><button id="sSnd">🔊 পৃষ্ঠার শব্দ: চালু</button></div>
     <div class="row"><button id="sOff">📥 অফলাইনে সেভ করুন</button></div>
     <div class="row" style="margin-bottom:0"><button id="sShare">🔗 এই বইয়ের লিংক শেয়ার</button></div>
   </div>
@@ -270,9 +271,9 @@ const CAT_LABELS = {
 };
 // মেনুর "যোগাযোগ"-এ যা দেবেন সেটাই দেখাবে; ফাঁকা রাখলে ওই লাইন আসবে না
 const CONTACT = {
-  whatsapp: '',   // দেশের কোডসহ নম্বর, শুধু সংখ্যা। যেমন 96891234567
-  email:    '',   // যেমন info@example.com
-  link:     ''    // ফেসবুক পেজ / ওয়েবসাইট ইত্যাদির লিংক
+  whatsapp: '96897657655',   // দেশের কোডসহ নম্বর, শুধু সংখ্যা। যেমন 96891234567
+  email:    'pearu86@gmail.com',   // যেমন info@example.com
+  link:     'https://www.facebook.com/share/1D7nJii4Cq/'    // ফেসবুক পেজ / ওয়েবসাইট ইত্যাদির লিংক
 };
 /* ================================= */
 
@@ -765,9 +766,44 @@ function applyPref(){
   $('dim').style.opacity=((100-PREF.br)/100*0.75).toFixed(2);
   document.querySelectorAll('#sp [data-th]').forEach(b=>b.classList.toggle('on',b.dataset.th===PREF.th));
   $('br').value=PREF.br;
+  const snd=PREF.snd!==false;                            // আগে সেভ করা সেটিংয়ে না থাকলে চালু ধরা হয়
+  $('sSnd').textContent=snd?'🔊 পৃষ্ঠার শব্দ: চালু':'🔇 পৃষ্ঠার শব্দ: বন্ধ';$('sSnd').classList.toggle('on',snd);
 }
 document.querySelectorAll('#sp [data-th]').forEach(b=>b.onclick=()=>{PREF.th=b.dataset.th;store('mk_pref',PREF);applyPref()});
 $('br').oninput=e=>{PREF.br=+e.target.value;store('mk_pref',PREF);applyPref()};
+
+/* পৃষ্ঠা উল্টানোর শব্দ: Web Audio দিয়ে বানানো (আলাদা ফাইল লাগে না, অফলাইনেও চলে) */
+let AC=null,SNDBUF=null,lastSnd=0;
+function ensureAC(){                                     // ফোনের নিয়মে শব্দ চালু করতে প্রথম ছোঁয়ায় তৈরি/জাগিয়ে রাখা
+  if(PREF.snd===false)return null;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    if(AC.state==='suspended')AC.resume();
+  }catch(e){AC=null}
+  return AC;
+}
+function flipSound(force){
+  if(!force&&(PREF.snd===false||!$('aud').paused))return;   // তিলাওয়াত/অডিও চলার সময় বাজবে না
+  const now=Date.now();if(now-lastSnd<250)return;lastSnd=now;
+  const ctx=force?(PREF.snd=true,ensureAC()):ensureAC();if(!ctx)return;
+  try{
+    if(!SNDBUF||SNDBUF.sampleRate!==ctx.sampleRate){       // কাগজ ওল্টানোর মতো: ছোট নয়েজ + দ্রুত মিলিয়ে যাওয়া
+      const len=Math.floor(ctx.sampleRate*0.3);SNDBUF=ctx.createBuffer(1,len,ctx.sampleRate);
+      const d=SNDBUF.getChannelData(0);
+      for(let i=0;i<len;i++){const p=i/len;d[i]=(Math.random()*2-1)*Math.pow(1-p,1.8)*Math.min(1,p*40);}
+    }
+    const t=ctx.currentTime,src=ctx.createBufferSource(),bp=ctx.createBiquadFilter(),g=ctx.createGain();
+    src.buffer=SNDBUF;bp.type='bandpass';bp.Q.value=0.8;
+    bp.frequency.setValueAtTime(900,t);bp.frequency.exponentialRampToValueAtTime(3800,t+0.25);
+    g.gain.setValueAtTime(0.22,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.3);
+    src.connect(bp);bp.connect(g);g.connect(ctx.destination);src.start(t);
+  }catch(e){}
+}
+$('reader').addEventListener('pointerdown',()=>{ensureAC()},{passive:true});
+$('sSnd').onclick=()=>{
+  PREF.snd=PREF.snd===false;store('mk_pref',PREF);applyPref();
+  if(PREF.snd){lastSnd=0;flipSound(true)}                 // চালু করলে একবার শুনিয়ে দেওয়া
+};
 applyPref();
 
 /* জুম */
@@ -1040,6 +1076,7 @@ async function openBook(b,startPage){
     flip.loadFromHTML(book.querySelectorAll('.page'));
     flip.on('flip',e=>{sync(e.data);renderAround(e.data);saveLast()});
     flip.on('changeState',e=>{
+      if(e.data==='flipping')flipSound();                // পাতা উল্টানো শুরু হলে শব্দ (স্লাইডারে লাফ দিলে বাজে না)
       if(e.data==='user_fold'||e.data==='flipping'){flipping=true;hideBars()}
       else if(e.data==='read')flipping=false;
     });
