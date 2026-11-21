@@ -769,9 +769,12 @@ let pdf=null,task=null,flip=null,rendered=new Set(),total=0,token=0,curBook=null
 /* ১/২ পৃষ্ঠা: ফোনে (ছোট স্ক্রিন) ডিফল্ট ১ পৃষ্ঠা, বড় স্ক্রিনে ২ পৃষ্ঠা; পছন্দ ফোনে মনে থাকে */
 const isPhone=()=>Math.min(screen.width,screen.height)<600;
 const onePage=()=>PREF.pg?PREF.pg==='1':isPhone();
-function applyPage(){
+// ১ পৃষ্ঠা: লাইব্রেরি তখনই পোর্ট্রেটে যায় যখন ব্লকের প্রস্থ < ২×minWidth; তাই minWidth স্ক্রিনের অর্ধেকের একটু বেশি রাখি (maxWidth-এর নিচেই)
+const minW=()=>onePage()?Math.ceil(Math.max(screen.width,screen.height,innerWidth)/2)+20:180;
+const maxW=()=>Math.max(1400,minW()+200);
+  function applyPage(){
   $('sPg').textContent=onePage()?'📄 ১ পৃষ্ঠা (চাপলে ২ পৃষ্ঠা)':'📖 ২ পৃষ্ঠা (চাপলে ১ পৃষ্ঠা)';
-  if(flip){try{const st=flip.getSettings();st.minWidth=onePage()?6000:180;flip.update()}catch(e){}}
+    if(flip){try{const st=flip.getSettings();st.minWidth=minW();st.maxWidth=maxW();flip.update()}catch(e){}}
 }
 function applyPref(){
   $('stage').dataset.th=PREF.th;
@@ -1109,7 +1112,7 @@ async function openBook(b,startPage){
     }
     flip=new St.PageFlip(book,{
       width:Math.round(W),height:Math.round(H),size:'stretch',
-      minWidth:onePage()?6000:180,maxWidth:1400,minHeight:240,maxHeight:2000,
+      minWidth:minW(),maxWidth:maxW(),minHeight:240,maxHeight:2000,
       showCover:true,usePortrait:true,mobileScrollSupport:false,disableFlipByClick:true,
       maxShadowOpacity:.4,flippingTime:600,drawShadow:true
     });
@@ -1156,7 +1159,8 @@ async function renderPage(i){
   const c=document.querySelectorAll('#book .page canvas')[i];
   if(!c||my!==token)return;
   c.width=vp.width;c.height=vp.height;
-  await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+    try{await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise}
+  catch(e){if(my===token){rendered.delete(i);setTimeout(()=>renderPage(i),600)}}   // ব্যর্থ হলে আবার চেষ্টা
 }
 function renderAround(i){[0,1,-1,2,3,-2,4,5].forEach(d=>renderPage(i+d))}   // আগে বর্তমান পাতা, তারপর পাশের
 
