@@ -769,12 +769,23 @@ let pdf=null,task=null,flip=null,rendered=new Set(),total=0,token=0,curBook=null
 /* ১/২ পৃষ্ঠা: ফোনে (ছোট স্ক্রিন) ডিফল্ট ১ পৃষ্ঠা, বড় স্ক্রিনে ২ পৃষ্ঠা; পছন্দ ফোনে মনে থাকে */
 const isPhone=()=>Math.min(screen.width,screen.height)<600;
 const onePage=()=>PREF.pg?PREF.pg==='1':isPhone();
-// ১ পৃষ্ঠা: লাইব্রেরি তখনই পোর্ট্রেটে যায় যখন ব্লকের প্রস্থ < ২×minWidth; তাই minWidth স্ক্রিনের অর্ধেকের একটু বেশি রাখি (maxWidth-এর নিচেই)
-const minW=()=>onePage()?Math.ceil(Math.max(screen.width,screen.height,innerWidth)/2)+20:180;
-const maxW=()=>Math.max(1400,minW()+200);
+/* ১ পৃষ্ঠা: #book-কে পাতার অনুপাতে স্ক্রিনে ঠিক ধরে যায় এমন মাপ দিই, আর minWidth রাখি তার অর্ধেকের একটু বেশি
+   (লাইব্রেরি ব্লকের প্রস্থ < ২×minWidth হলেই পোর্ট্রেট/১ পৃষ্ঠা ধরে, আর পাতা ব্লকের মধ্যেই থাকে → ডানে কাটে না) */
+let pgR=0.7;
+function fitBook(){
+  const b=$('book'),st=$('stage');if(!b)return{minWidth:180,maxWidth:1400};
+  if(onePage()){
+    const sw=st.clientWidth,sh=st.clientHeight;
+    const bw=Math.max(100,Math.floor(Math.min(sw,sh*pgR))),bh=Math.floor(bw/pgR);
+    Object.assign(b.style,{position:'absolute',width:bw+'px',height:bh+'px',left:Math.floor((sw-bw)/2)+'px',top:Math.floor((sh-bh)/2)+'px'});
+    return{minWidth:Math.ceil(bw/2)+1,maxWidth:Math.max(1400,bw+1)};
+  }
+  Object.assign(b.style,{position:'',width:'',height:'',left:'',top:''});
+  return{minWidth:180,maxWidth:1400};
+}
   function applyPage(){
   $('sPg').textContent=onePage()?'📄 ১ পৃষ্ঠা (চাপলে ২ পৃষ্ঠা)':'📖 ২ পৃষ্ঠা (চাপলে ১ পৃষ্ঠা)';
-    if(flip){try{const st=flip.getSettings();st.minWidth=minW();st.maxWidth=maxW();flip.update()}catch(e){}}
+  if(flip){try{const st=flip.getSettings();Object.assign(st,fitBook());flip.update()}catch(e){}}
 }
 function applyPref(){
   $('stage').dataset.th=PREF.th;
@@ -1103,7 +1114,7 @@ async function openBook(b,startPage){
     pdf=doc;
     total=pdf.numPages;
     const p1=await pdf.getPage(1),vp=p1.getViewport({scale:1});
-    const W=vp.width,H=vp.height;
+    const W=vp.width,H=vp.height;pgR=W/H;
     const book=$('book');book.innerHTML='';
     for(let i=0;i<total;i++){
       const d=document.createElement('div');d.className='page';
@@ -1112,7 +1123,7 @@ async function openBook(b,startPage){
     }
     flip=new St.PageFlip(book,{
       width:Math.round(W),height:Math.round(H),size:'stretch',
-      minWidth:minW(),maxWidth:maxW(),minHeight:240,maxHeight:2000,
+      ...fitBook(),minHeight:240,maxHeight:2000,
       showCover:true,usePortrait:true,mobileScrollSupport:false,disableFlipByClick:true,
       maxShadowOpacity:.4,flippingTime:600,drawShadow:true
     });
@@ -1204,7 +1215,7 @@ $('bFull').onclick=()=>isFs()?exitFs():enterFs();
 
 /* ল্যান্ডস্কেপ */
 function unrot(){R.classList.remove('rot');relayout();barsAuto()}
-function relayout(){setTimeout(()=>{try{flip&&flip.update()}catch(e){}if(Z>1){clampPan();applyZoom()}},250)}
+function relayout(){setTimeout(()=>{try{if(flip){Object.assign(flip.getSettings(),fitBook());flip.update()}}catch(e){}if(Z>1){clampPan();applyZoom()}},250)}
 $('bLand').onclick=async()=>{
   if(R.classList.contains('rot')){unrot();return}
   const portrait=window.innerHeight>window.innerWidth;
