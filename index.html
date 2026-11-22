@@ -139,6 +139,17 @@ audio{height:34px;max-width:42vw}
 #csub.open{display:block}
 #csub a{display:block;padding:10px 12px;color:var(--brand);text-decoration:none;font-weight:600}
 .df{padding:12px 16px;font-size:12px;color:var(--mute);border-top:1px solid var(--line)}
+#info{position:fixed;inset:0;z-index:50;background:var(--bg,#f4f7f5);overflow:auto;display:none}
+#info.open{display:block}
+#info .ih{position:sticky;top:0;background:var(--brand);color:#fff;display:flex;align-items:center;gap:10px;padding:12px 14px;z-index:2}
+#info .ih b{flex:1;font-size:17px}#info .ih button{background:none;border:0;color:#fff;font-size:22px;cursor:pointer}
+#info .ib2{max-width:640px;margin:0 auto;padding:12px 14px 40px}
+#info h3{margin:18px 0 8px;font-size:15px;color:var(--brand)}
+#info .g{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px}
+#info .g .st b{font-size:22px;display:block}#info .g .st span{font-size:13px}
+#info .note{font-size:12.5px;opacity:.7;margin-top:8px;line-height:1.6}
+#info details.me{margin-top:20px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}#info details.me summary{cursor:pointer;font-weight:600}
+#info ul{list-style:none;margin:0;padding:0}#info li{display:flex;justify-content:space-between;gap:10px;padding:8px 2px;border-bottom:1px solid var(--line);font-size:14px}
 #toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%) translateY(10px);background:rgba(20,24,22,.94);color:#fff;padding:10px 16px;border-radius:999px;font-size:14px;z-index:60;opacity:0;pointer-events:none;transition:.2s;max-width:86vw;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%)}
 /* রিডার বারের বাটন: সরু স্ক্রিনে দুই লাইন */
@@ -198,6 +209,7 @@ audio{height:34px;max-width:42vw}
     <button data-m="off"><span>📥</span>অফলাইন বই<i id="noff"></i></button>
     <hr>
     <button id="mInstall" style="display:none"><span>📲</span>অ্যাপ ইনস্টল করুন</button>
+    <button id="mInfo"><span>📊</span>ইনফো</button>
     <button id="mShare"><span>📤</span>শেয়ার</button>
     <button id="mContact"><span>📞</span>যোগাযোগ</button>
     <div id="csub"></div>
@@ -205,6 +217,7 @@ audio{height:34px;max-width:42vw}
   <div class="df" id="dfoot"></div>
 </aside>
 <div id="toast"></div>
+<div id="info"><div class="ih"><button id="iClose" aria-label="বন্ধ">←</button><b>📊 ইনফো</b></div><div class="ib2" id="iBody"></div></div>
 
 <div id="reader">
   <div id="bar">
@@ -254,6 +267,7 @@ audio{height:34px;max-width:42vw}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
 <script>
+
 /* ============ কনফিগ ============ */
 const SHEET_ID   = '1A6uF_E2i0Jrnz9TpP2IVfJb26QkVJbbYtZFoPWPzSa4';   // শিটের URL-এ /d/ এবং /edit-এর মাঝের অংশ
 const SHEET_NAME = 'Books';                      // ট্যাবের নাম
@@ -346,13 +360,20 @@ const PAGE_SIZE=40;
 function load(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}}
 function store(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 let FAV=load('mk_fav',[]),BM=load('mk_bm',{}),DL=load('mk_dl',[]);
+/* ব্যবহারকারীর নিজের পরিসংখ্যান (শুধু এই ফোনে থাকে) */
+let ME=load('mk_me',{first:Date.now(),days:[],opened:{},done:{},dlP:0,dlA:0,dlB:{},pages:0,secs:0});
+const dayKey=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+(function(){ME.days=ME.days||[];ME.opened=ME.opened||{};ME.done=ME.done||{};ME.dlB=ME.dlB||{};const k=dayKey();if(ME.days[ME.days.length-1]!==k){ME.days.push(k);ME.days=ME.days.slice(-400)}store('mk_me',ME)})();
+const saveME=()=>store('mk_me',ME);
+setInterval(()=>{if(document.hidden||!$('reader').classList.contains('open'))return;ME.secs+=15;saveME()},15000);   // পড়ার সময়
 let LP=load('mk_last',{});            // শেষ পড়া পৃষ্ঠা: link → {page,total,ts}
 let OFF=load('mk_off',[]);            // অফলাইনে সেভ: [{link,size,ts}]
 let PREF=load('mk_pref',{th:'normal',br:100});
 const BKC='mk-books';
 const isOff=b=>OFF.some(o=>o.link===b.link);
 const fmtDate=ts=>new Date(ts).toLocaleDateString('bn-BD',{day:'numeric',month:'short'});
-function recordDl(b){
+function recordDl(b,type){
+  if(type==='aud')ME.dlA++;else ME.dlP++;ME.dlB[b.link]=1;saveME();ping('dl',b,type);
   DL=DL.filter(d=>d.link!==b.link);DL.unshift({link:b.link,ts:Date.now()});DL=DL.slice(0,200);
   store('mk_dl',DL);updateBadges();
 }
@@ -398,6 +419,20 @@ async function fetchTop(){
     TOP=(j.top||[]);TOPV={};TOP.forEach(x=>TOPV[x.k]=x.v);TOPT=Date.now();
   }catch(e){TOP=false}
 }
+function uid(){try{let u=localStorage.getItem('mk_uid');if(!u){u=Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem('mk_uid',u)}return u}catch(e){return 'x'}}
+function ping(a,b,t){
+  if(!PROXY_URL||(b&&b.q))return;
+  const q='?a='+a+'&u='+encodeURIComponent(uid())+(b?'&k='+encodeURIComponent(b.link):'')+(t?'&t='+t:'');
+  fetch(PROXY_URL+q,{mode:'no-cors',keepalive:true}).catch(()=>{});
+}
+try{if(!sessionStorage.getItem('mk_v')){sessionStorage.setItem('mk_v','1');ping('v')}}catch(e){ping('v')}   // প্রতি সেশনে একবার ভিজিট গোনা
+function sendAct(){            // নতুন পৃষ্ঠা/সময় সার্ভারে পাঠানো (শুধু যোগফল, কোন বই পড়েছে তা নয়)
+  if(!PROXY_URL)return;
+  const dp=ME.pages-(ME.sp||0),ds=ME.secs-(ME.ss||0);if(dp<=0&&ds<=0)return;
+  ME.sp=ME.pages;ME.ss=ME.secs;saveME();
+  fetch(PROXY_URL+'?a=act&pg='+Math.max(0,dp)+'&s='+Math.max(0,ds),{mode:'no-cors',keepalive:true}).catch(()=>{});
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)sendAct()});
 function hit(b){
   if(!PROXY_URL||b.q)return;                             // কুরআনের ফাইলের গণনা রাখা হয় না
   const k='h_'+b.link;
@@ -783,7 +818,7 @@ function fitBook(){
   Object.assign(b.style,{position:'',width:'',height:'',left:'',top:''});
   return{minWidth:180,maxWidth:1400};
 }
-  function applyPage(){
+function applyPage(){
   $('sPg').textContent=onePage()?'📄 ১ পৃষ্ঠা (চাপলে ২ পৃষ্ঠা)':'📖 ২ পৃষ্ঠা (চাপলে ১ পৃষ্ঠা)';
   if(flip){try{const st=flip.getSettings();Object.assign(st,fitBook());flip.update()}catch(e){}}
 }
@@ -960,7 +995,7 @@ async function getBlob(){
 }
 $('bDlPdf').onclick=async()=>{
   if(!curBook)return;
-  recordDl(curBook);
+  recordDl(curBook,'pdf');
   let bl=null;try{bl=await getBlob()}catch(e){}
   if(bl)saveBlob(bl,curBook.name+'.pdf');else window.open(curBook.link,'_blank');
 };
@@ -1006,7 +1041,7 @@ $('audSel').onchange=e=>{
 $('bDlAud').onclick=async()=>{
   const list=(curBook&&curBook.audios)||[],au=list[+$('audSel').value||0];
   if(!au)return;
-  recordDl(curBook);
+  recordDl(curBook,'aud');
   const btn=$('bDlAud'),old=btn.textContent;btn.textContent='⏳';
   try{
     const r=await fetch(au.url);if(!r.ok)throw 0;
@@ -1043,6 +1078,10 @@ function streamTask(url,onProg){
   t.onProgress=p=>{if(p&&p.total)onProg(p.loaded/p.total)};
   return t;
 }
+const driveId=u=>{const m=String(u).match(/^https?:\/\/(?:drive|docs)\.google\.com\/(?:uc|open|file\/d\/([\w-]+))/i);if(!m)return null;
+  return m[1]||(String(u).match(/[?&]id=([\w-]+)/)||[])[1]||null};
+// Drive লিংকে ব্রাউজার সরাসরি পড়তে পারে না (CORS); API Key থাকলে Drive API দিয়ে পড়া যায় — দ্রুত, রেঞ্জসহ
+function directUrl(u){const id=driveId(u);if(!id)return u;return DRIVE_KEY?`https://www.googleapis.com/drive/v3/files/${id}?alt=media&key=${DRIVE_KEY}`:null}
 const notPdfErr=e=>e&&(e.name==='MissingPDFException'||e.name==='InvalidPDFException');
 async function loadDoc(b,my,onProg,note){
   const url=b.link,go=t=>{task=t;return t.promise};
@@ -1053,14 +1092,15 @@ async function loadDoc(b,my,onProg,note){
     return go(pdfjsLib.getDocument({data:off}));
   }
   const hasFallback=!!(FAST_PROXY||PROXY_URL);
-  if(!hasFallback||!directBad(url)){                    // ১) সরাসরি
-    try{note('সরাসরি');const d=await go(streamTask(url,onProg));markDirect(url,false);return d}
+  const dUrl=directUrl(url);
+  if(dUrl&&(!hasFallback||!directBad(url))){            // ১) সরাসরি
+    try{note('সরাসরি');const d=await go(streamTask(dUrl,onProg));markDirect(url,false);return d}
     catch(e){
       if(my!==token)return null;
       if(!notPdfErr(e)&&navigator.onLine)markDirect(url,true);
       if(!hasFallback||notPdfErr(e))throw e;
     }
-  }
+  }else if(!hasFallback)throw new Error('drive-needs-key');
   if(FAST_PROXY){                                       // ২) Cloudflare Worker (রেঞ্জ + স্ট্রিম)
     try{note('প্রক্সি');return await go(streamTask(FAST_PROXY+'?url='+encodeURIComponent(url),onProg))}
     catch(e){if(my!==token)return null;if(!PROXY_URL||notPdfErr(e))throw e}
@@ -1096,6 +1136,7 @@ async function openBook(b,startPage){
   $('reader').classList.add('open');document.body.style.overflow='hidden';
   if(!(history.state&&history.state.r)){try{history.pushState({r:1},'','?b='+b.id)}catch(e){}}
   $('rTitle').textContent=b.name;
+  ME.opened[b.link]=Date.now();saveME();
   curBook=b;curBlob=null;setZoom(1);applyPref();$('sp').classList.remove('open');
   const a=$('aud'),A=b.audios||[],sel=$('audSel');
   if(A.length){a.src=A[0].url;a.style.display='block';$('bDlAud').style.display='flex'}
@@ -1128,7 +1169,7 @@ async function openBook(b,startPage){
       maxShadowOpacity:.4,flippingTime:600,drawShadow:true
     });
     flip.loadFromHTML(book.querySelectorAll('.page'));
-    flip.on('flip',e=>{sync(e.data);renderAround(e.data);saveLast()});
+    flip.on('flip',e=>{ME.pages++;if(e.data+1>=total&&total>3){ME.done[curBook.link]=1}saveME();sync(e.data);renderAround(e.data);saveLast()});
     flip.on('changeState',e=>{
       if(e.data==='flipping')flipSound();                // পাতা উল্টানো শুরু হলে শব্দ (স্লাইডারে লাফ দিলে বাজে না)
       if(e.data==='user_fold'||e.data==='flipping'){flipping=true;hideBars()}
@@ -1170,7 +1211,7 @@ async function renderPage(i){
   const c=document.querySelectorAll('#book .page canvas')[i];
   if(!c||my!==token)return;
   c.width=vp.width;c.height=vp.height;
-    try{await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise}
+  try{await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise}
   catch(e){if(my===token){rendered.delete(i);setTimeout(()=>renderPage(i),600)}}   // ব্যর্থ হলে আবার চেষ্টা
 }
 function renderAround(i){[0,1,-1,2,3,-2,4,5].forEach(d=>renderPage(i+d))}   // আগে বর্তমান পাতা, তারপর পাশের
@@ -1190,7 +1231,7 @@ function closeReader(){
 }
 function doClose(){
   if(!$('reader').classList.contains('open'))return;
-  saveLast(true);
+  saveLast(true);sendAct();
   token++;exitFs();unrot();$('aud').pause();$('sp').classList.remove('open');
   $('reader').classList.remove('open');document.body.style.overflow='';destroy();setZoom(1);
   if(location.search){try{history.replaceState(null,'',BASE)}catch(e){}}
@@ -1234,6 +1275,54 @@ window.addEventListener('resize',relayout);
 window.addEventListener('orientationchange',()=>{unrot()});
 
 updateBadges();
+/* ===== ইনফো পাতা ===== */
+const dur=s=>{const m=Math.floor(s/60);return m<60?bn(m)+' মিনিট':bn(Math.floor(m/60))+' ঘণ্টা '+bn(m%60)+' মিনিট'};
+function streak(){const set=new Set(ME.days);let n=0,d=new Date();if(!set.has(dayKey()))d.setDate(d.getDate()-1);
+  for(;;){const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');if(!set.has(k))break;n++;d.setDate(d.getDate()-1)}return n}
+const tile=(n,l)=>`<div class="st"><b>${n}</b><span>${l}</span></div>`;
+let INFO=null,INFOT=0;
+async function fetchInfo(){
+  if(!PROXY_URL)return null;
+  if(INFO&&Date.now()-INFOT<60000)return INFO;
+  try{const r=await fetch(PROXY_URL+'?a=info');INFO=await r.json();INFOT=Date.now()}catch(e){INFO=null}
+  return INFO;
+}
+function esc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+async function renderInfo(){
+  const nb=books.length,na=books.filter(b=>b.audio).length;
+  const cats={};books.forEach(b=>{if(b.cat)cats[b.catLabel]=(cats[b.catLabel]||0)+1});
+  const qa=QR?QR.all.reduce((s,x)=>s+x.audios.length,0):0;
+  const opened=Object.keys(ME.opened).filter(l=>BYLINK.has(l));
+  const done=Object.keys(ME.done).filter(l=>BYLINK.has(l)).length;
+  const lib='<h3>📚 লাইব্রেরি</h3><div class="g">'+tile(bn(nb),'মোট বই')+tile(bn(na),'অডিওসহ বই')+tile(bn(nb-na),'শুধু পিডিএফ')
+    +(QR&&QR.all.length?tile(bn(QR.all.length),'কুরআনের পিডিএফ')+(qa?tile(bn(qa),'কুরআনের অডিও'):''):'')+'</div>'
+    +(QR&&QR.all.length?`<div class="note">কুরআন: পূর্ণ ${bn(QR.full?1:0)} • পারা ${bn(QR.para.length)} • সূরা ${bn(QR.surah.length)}</div>`:'');
+  const cl=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  const catH=cl.length?'<h3>🗂 ক্যাটাগরি অনুযায়ী</h3><ul>'+cl.map(([k,v])=>`<li><span>${esc(k)}</span><b>${bn(v)}</b></li>`).join('')+'</ul>':'';
+  const me='<details class="me"><summary>🙋 শুধু আমার হিসাব (এই ফোনের)</summary><div class="g" style="margin-top:8px">'+tile(bn(opened.length),'বই খুলেছি')+tile(bn(done),'শেষ করেছি')
+    +tile(bn(ME.dlP),'পিডিএফ ডাউনলোড')+tile(bn(ME.dlA),'অডিও ডাউনলোড')+tile(bn(ME.pages),'পৃষ্ঠা উল্টেছি')+tile(dur(ME.secs),'পড়ার সময়')
+    +tile(bn(ME.days.length),'দিন এসেছি')+tile(bn(streak()),'টানা দিন')+tile(bn(FAV.length),'ফেভারিট')+tile(bn(Object.keys(BM).length),'বুকমার্ক')+tile(bn(OFF.length),'অফলাইনে সেভ')
+    +'</div><div class="note">এটা শুধু আপনার ফোনে থাকে; ব্রাউজারের ডেটা মুছলে শূন্য হবে।</div></details>';
+  const G='<h3>🌍 সবার হিসাব (সব ব্যবহারকারী মিলিয়ে)</h3>';
+  $('iBody').innerHTML='<div id="gl">'+G+(PROXY_URL?'<div class="note">লোড হচ্ছে…</div>':'<div class="note">সবার হিসাব দেখাতে PROXY_URL সেট করে proxy.gs ডিপ্লয় করতে হবে।</div>')+'</div>'+lib+catH+me;
+  if(!PROXY_URL)return;
+  const j=await fetchInfo();
+  if(!$('info').classList.contains('open'))return;
+  const gl=$('gl');
+  if(!j||j.err){gl.innerHTML=G+'<div class="note">এখন আনা গেল না। proxy.gs নতুন ভার্সনে ডিপ্লয় করা আছে কিনা দেখুন।</div>';return}
+  const list=(t,a)=>a&&a.length?`<h3>${t}</h3><ul>`+a.map(x=>{const b=BYLINK.get(x.k);return b?`<li><span>${esc(b.name)}</span><b>${bn(x.v)}</b></li>`:''}).join('')+'</ul>':'';
+  gl.innerHTML=G+'<div class="g">'+tile(bn(j.visitors||0),'👥 মোট ভিজিটর')+tile(bn(j.today||0),'আজকের ভিজিটর')+tile(bn(j.visits||0),'মোট ভিজিট')
+    +tile(bn(j.opens||0),'📖 বই খোলা হয়েছে')+tile(bn(j.opensToday||0),'আজ খোলা হয়েছে')
+    +tile(bn(j.dlP||0),'⬇ পিডিএফ ডাউনলোড')+tile(bn(j.dlA||0),'⬇ অডিও ডাউনলোড')+tile(bn(j.dlToday||0),'আজ ডাউনলোড')
+    +tile(bn(j.pages||0),'📄 পৃষ্ঠা পড়া হয়েছে')+tile(dur(j.secs||0),'⏱ মোট পড়ার সময়')+'</div>'
+    +list('🔥 সবচেয়ে বেশি পড়া ৫টি বই',j.top)+list('⬇ সবচেয়ে বেশি ডাউনলোড ৫টি বই',j.topDl)
+    +(j.since?`<div class="note">গণনা শুরু: ${esc(j.since)}</div>`:'');
+}
+function openInfo(){closeMenu();$('info').classList.add('open');document.body.style.overflow='hidden';renderInfo()}
+function closeInfo(){$('info').classList.remove('open');if(!$('reader').classList.contains('open'))document.body.style.overflow=''}
+$('mInfo').onclick=openInfo;$('iClose').onclick=closeInfo;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('info').classList.contains('open'))closeInfo()});
+
 init();
 </script>
 </body>
