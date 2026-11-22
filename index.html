@@ -267,7 +267,6 @@ audio{height:34px;max-width:42vw}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
 <script>
-
 /* ============ কনফিগ ============ */
 const SHEET_ID   = '1A6uF_E2i0Jrnz9TpP2IVfJb26QkVJbbYtZFoPWPzSa4';   // শিটের URL-এ /d/ এবং /edit-এর মাঝের অংশ
 const SHEET_NAME = 'Books';                      // ট্যাবের নাম
@@ -541,6 +540,10 @@ function parseQuran(rows){
   });
   const trimHead=b=>{let i=0;while(i<b.length&&![3,4,6,8].some(k=>isUrl(g(b[i],k))))i++;return b.slice(i)};   // হেডার সারি বাদ
   let surah=trimHead(blocks[0]||[]),para=trimHead(blocks[1]||[]),rest=blocks.slice(2).flat();
+  if(surah.length>114&&!para.length){                      // ফাঁকা সারি ছাড়া সব একসাথে থাকলে সংখ্যা ধরে ভাগ: ১১৪ সূরা, ৩০ পারা, বাকিটা পূর্ণ কুরআন
+    const all=surah.concat(rest).filter(r=>isUrl(g(r,3))||isUrl(g(r,2)));
+    surah=all.slice(0,114);para=all.slice(114,144);rest=all.slice(144);
+  }
   const linkInC=r=>isUrl(g(r,2))&&!g(r,3);
   rest=rest.concat(para.filter(linkInC));para=para.filter(r=>!linkInC(r));      // ফাঁকা সারি ছাড়া নিচে থাকলেও ধরা
   if(!rest.length&&para.length>30)rest=[para.pop()];
@@ -1284,7 +1287,11 @@ let INFO=null,INFOT=0;
 async function fetchInfo(){
   if(!PROXY_URL)return null;
   if(INFO&&Date.now()-INFOT<60000)return INFO;
-  try{const r=await fetch(PROXY_URL+'?a=info');INFO=await r.json();INFOT=Date.now()}catch(e){INFO=null}
+  try{
+    const r=await fetch(PROXY_URL+'?a=info'),t=await r.text();
+    try{INFO=JSON.parse(t);INFOT=Date.now()}
+    catch(e){INFO={err:/host not allowed/.test(t)?'old':'bad',raw:t.slice(0,120)}}   // পুরোনো স্ক্রিপ্ট ?a=info বোঝে না, 'host not allowed' ফেরত দেয়
+  }catch(e){INFO={err:'net'}}
   return INFO;
 }
 function esc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
@@ -1309,7 +1316,10 @@ async function renderInfo(){
   const j=await fetchInfo();
   if(!$('info').classList.contains('open'))return;
   const gl=$('gl');
-  if(!j||j.err){gl.innerHTML=G+'<div class="note">এখন আনা গেল না। proxy.gs নতুন ভার্সনে ডিপ্লয় করা আছে কিনা দেখুন।</div>';return}
+  if(!j||j.err){const why={old:'আপনার Apps Script এখনো পুরোনো ভার্সনে চলছে। proxy.gs-এর নতুন কোড বসিয়ে Deploy → Manage deployments → ✏️ → Version: <b>New version</b> → Deploy করুন (একই /exec লিংক থাকবে)।',
+    net:'সার্ভারের সাথে যোগ হলো না। ইন্টারনেট বা PROXY_URL ঠিক আছে কিনা দেখুন, আর Deploy-এর Who has access: <b>Anyone</b> কিনা দেখুন।',
+    bad:'সার্ভার থেকে অচেনা উত্তর এসেছে: '+esc((j&&j.raw)||'')+'<br>(Apps Script → Executions-এ ত্রুটি দেখুন)'}[j&&j.err]||'এখন আনা গেল না।';
+    gl.innerHTML=G+'<div class="note">'+why+'</div>';INFO=null;return}
   const list=(t,a)=>a&&a.length?`<h3>${t}</h3><ul>`+a.map(x=>{const b=BYLINK.get(x.k);return b?`<li><span>${esc(b.name)}</span><b>${bn(x.v)}</b></li>`:''}).join('')+'</ul>':'';
   gl.innerHTML=G+'<div class="g">'+tile(bn(j.visitors||0),'👥 মোট ভিজিটর')+tile(bn(j.today||0),'আজকের ভিজিটর')+tile(bn(j.visits||0),'মোট ভিজিট')
     +tile(bn(j.opens||0),'📖 বই খোলা হয়েছে')+tile(bn(j.opensToday||0),'আজ খোলা হয়েছে')
