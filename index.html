@@ -38,7 +38,7 @@ header h1{margin:0 0 10px;font-size:20px;font-weight:700}
 #qtabs button.on{background:#fff;color:var(--brand);font-weight:600}
 #qtabs i{font-style:normal;font-size:12px;opacity:.75;margin-left:2px}
 body.vq #qtabs{display:flex}
-body.vq #cat,body.vq #types,body.vq #resumeBox{display:none}
+body.vq #cat,body.vq #types,body.vq #weeklyBox,body.vq #resumeBox{display:none}
 .st[data-go]{cursor:pointer}
 .st small{display:block;font-size:11px;color:var(--mute)}
 .qn{flex:none;width:36px;height:36px;border-radius:50%;background:#e7f3ed;color:var(--brand);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
@@ -54,6 +54,14 @@ body.vq #cat,body.vq #types,body.vq #resumeBox{display:none}
 .st span{font-size:12px;color:var(--mute)}
 #resumeBox{max-width:900px;margin:0 auto;padding:10px 12px 0}
 #resumeBox:empty{padding:0}
+.wk{margin:12px auto 0;max-width:900px;border-radius:16px;padding:16px;color:#fff;position:relative;overflow:hidden;background:linear-gradient(135deg,#0f6e4c,#17996a);box-shadow:0 6px 18px #0f6e4c40;border:2px solid #e8c15c}
+#weeklyBox{max-width:900px;margin:0 auto;padding:0 12px}#weeklyBox:empty{display:none}
+.wk:before{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:#ffffff14}
+.wk small{display:block;color:#f3d57c;font-weight:700}.wk b{display:block;font-size:20px;line-height:1.4;margin:6px 0 4px}
+.wk .m{font-size:12.5px;opacity:.85}.wk .row{display:flex;gap:8px;margin-top:12px}
+.wk button{flex:1;border:0;border-radius:10px;padding:10px;font:inherit;font-weight:700;cursor:pointer}
+.wk .b1{background:#f3d57c;color:#4a3500}.wk .b2{background:#ffffff26;color:#fff}
+.pill.w{background:#c8962a}.item.gold{border-color:#ecd48a;background:#fffdf5}
 .resume{background:linear-gradient(135deg,var(--brand),#138a5f);color:#fff;border-radius:14px;padding:14px 16px;cursor:pointer}
 .resume small{display:block;opacity:.85}
 .resume b{display:block;font-size:17px;margin:2px 0;line-height:1.35}
@@ -187,6 +195,7 @@ audio{height:34px;max-width:42vw}
   <div id="mode"><span id="modeLbl"></span><button id="modeX">✕ সব বই</button></div>
   <div id="count">লোড হচ্ছে…</div>
 </header>
+<div id="weeklyBox"></div>
 <div id="resumeBox"></div>
 <div id="list"></div>
 
@@ -473,6 +482,7 @@ function pool(){
 const catKey=c=>String(c||'').trim().toLowerCase().replace(/\s+/g,' ');
 const CATMAP=Object.fromEntries(Object.entries(CAT_LABELS).map(([k,v])=>[catKey(k),v]));
 const catLabel=c=>CATMAP[catKey(c)]||c;
+let WK=null;
 function setBooks(rows){
   const n=rows.length;
   rows.forEach((b,i)=>{
@@ -486,6 +496,7 @@ function setBooks(rows){
   [books[0]&&books[0].link,FAST_PROXY].forEach(u=>{       // সংযোগ আগে থেকেই তৈরি রাখা
     try{if(!u)return;const l=document.createElement('link');l.rel='preconnect';l.href=new URL(u).origin;l.crossOrigin='';document.head.appendChild(l)}catch(e){}
   });
+  WK=books.find(b=>b.weekly)||null;                      // F কলামে লেখা থাকা সবচেয়ে নিচের (সর্বশেষ) বই
   rebuildIndex();
   $('cat').innerHTML='<option value="">সব ক্যাটাগরি</option>';
   const order=Object.keys(CATMAP);
@@ -503,7 +514,8 @@ async function loadSheet(){
     const t=await (await fetch(url)).text();
     const j=JSON.parse(t.substring(t.indexOf('(')+1,t.lastIndexOf(')')));
     const cell=(r,i)=>{const c=r.c[i];return c&&c.v!=null?String(c.v).trim():''};
-    rows=j.table.rows.map(r=>({name:cell(r,0),link:cell(r,1),cat:cell(r,2),audio:cell(r,3),topics:cell(r,4)}))
+    const wkCell=c=>c&&c.v!=null?String(/^Date\(/.test(c.v)&&c.f?c.f:c.v).trim():'';   // F কলাম: সাপ্তাহিক বইয়ের তারিখ
+    rows=j.table.rows.map(r=>({name:cell(r,0),link:cell(r,1),cat:cell(r,2),audio:cell(r,3),topics:cell(r,4),weekly:wkCell(r.c[5])}))
       .filter(b=>/^https?:/i.test(b.link)&&b.name);
     try{localStorage.setItem('mk_cache',JSON.stringify(rows))}catch(e){}
   }catch(e){
@@ -595,6 +607,17 @@ async function init(){
 
 /* ===== তালিকা ===== */
 const bn=n=>Number(n).toLocaleString('bn-BD',{useGrouping:false});
+function renderWeekly(){
+  const box=$('weeklyBox');box.innerHTML='';
+  if(!WK||view!=='books'||mode!=='all'||$('q').value.trim()||$('cat').value||typeF)return;
+  const d=document.createElement('div');d.className='wk';
+  d.innerHTML='<small>⭐ এই সপ্তাহের পাঠ</small><b></b><div class="m"></div><div class="row"><button class="b1">📖 এখনই পড়ুন</button></div>';
+  d.querySelector('b').textContent=WK.name;
+  d.querySelector('.m').textContent=[WK.weekly&&WK.weekly.length<40?'সপ্তাহ: '+WK.weekly:'',WK.audio?'🎧 অডিওসহ':''].filter(Boolean).join(' • ');
+  d.querySelector('.b1').onclick=()=>openBook(WK,0);
+  if(WK.audio){const b=document.createElement('button');b.className='b2';b.textContent='🎧 শুনুন';b.onclick=()=>{openBook(WK,0);try{$('aud').play().catch(()=>{})}catch(e){}};d.querySelector('.row').appendChild(b)}
+  box.appendChild(d);
+}
 function renderResume(){
   const box=$('resumeBox');box.innerHTML='';
   if(view!=='books'||mode!=='all'||$('q').value.trim()||$('cat').value||!books.length)return;
@@ -621,7 +644,7 @@ function apply(){
   });
   if(typeF==='aud')res=res.filter(b=>b.audio);else if(typeF==='pdf')res=res.filter(b=>!b.audio);
   filtered=res;
-  shown=0;$('list').innerHTML='';updateBadges();renderResume();
+  shown=0;$('list').innerHTML='';updateBadges();renderWeekly();renderResume();
   $('count').textContent=`${bn(filtered.length)} টি বই`+(base.length!==filtered.length?` (মোট ${bn(base.length)})`:'')+(fz?' • কাছাকাছি ফলাফল':'');
   if(!filtered.length){$('list').innerHTML=`<div class="empty">${(toks.length||cat||typeF)&&base.length?EMPTY.all:emptyMsg()}</div>`;return}
   more();
@@ -634,6 +657,7 @@ function more(){
     d.innerHTML=`<div class="t"></div><button class="fv" aria-label="ফেভারিট"></button><div class="go">›</div>`;
     const t=d.firstChild;t.textContent=b.name;
     if(b.isNew){const p=document.createElement('span');p.className='pill';p.textContent='নতুন';t.prepend(p)}
+    if(b.weekly){const p=document.createElement('span');p.className='pill w';p.textContent='⭐ সাপ্তাহিক';t.prepend(p);if(b===WK)d.classList.add('gold')}
     const sub=[];
     if(mode==='bm'&&BM[b.link])sub.push('🔖 পৃষ্ঠা '+BM[b.link].page);
     else if(mode==='dl'){const x=DL.find(z=>z.link===b.link);if(x)sub.push('⬇ '+fmtDate(x.ts))}
@@ -680,7 +704,7 @@ function qHero(it){
   d.onclick=()=>openBook(it,0);return d;
 }
 function renderQuran(){
-  const list=$('list');list.innerHTML='';$('resumeBox').innerHTML='';
+  const list=$('list');list.innerHTML='';$('weeklyBox').innerHTML='';$('resumeBox').innerHTML='';
   document.querySelectorAll('#qtabs [data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s===qsec));
   if(QR===null){$('count').textContent='লোড হচ্ছে…';return}
   if(QR===false||!QR.all.length){
@@ -1220,7 +1244,7 @@ function doClose(){
   token++;exitFs();unrot();$('aud').pause();$('sp').classList.remove('open');
   $('reader').classList.remove('open');document.body.style.overflow='';destroy();setZoom(1);
   if(location.search){try{history.replaceState(null,'',BASE)}catch(e){}}
-  if(view==='quran')renderQuran();else if(mode!=='all')apply();else renderResume();
+  if(view==='quran')renderQuran();else if(mode!=='all')apply();else{renderWeekly();renderResume()}
   refreshHearts();updateBadges();
 }
 window.addEventListener('popstate',()=>{if($('reader').classList.contains('open'))doClose()});
