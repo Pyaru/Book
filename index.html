@@ -38,7 +38,7 @@ header h1{margin:0 0 10px;font-size:20px;font-weight:700}
 #qtabs button.on{background:#fff;color:var(--brand);font-weight:600}
 #qtabs i{font-style:normal;font-size:12px;opacity:.75;margin-left:2px}
 body.vq #qtabs{display:flex}
-body.vq #cat,body.vq #types,body.vq #stats,body.vq #resumeBox{display:none}
+body.vq #cat,body.vq #types,body.vq #resumeBox{display:none}
 .st[data-go]{cursor:pointer}
 .st small{display:block;font-size:11px;color:var(--mute)}
 .qn{flex:none;width:36px;height:36px;border-radius:50%;background:#e7f3ed;color:var(--brand);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
@@ -48,8 +48,6 @@ body.vq #cat,body.vq #types,body.vq #stats,body.vq #resumeBox{display:none}
 .qhero small{opacity:.85}
 .qh{font-weight:700;color:var(--brand);margin:14px 2px 8px;font-size:15px}
 #audSel{height:34px;border-radius:8px;border:0;background:#2f3a35;color:#fff;font:inherit;font-size:13px;padding:0 6px;max-width:34vw}
-#stats{max-width:900px;margin:0 auto;padding:10px 12px 0}
-#stats:empty{display:none;padding:0}
 .stg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
 .st{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;text-align:center}
 .st b{display:block;font-size:20px;color:var(--brand);line-height:1.2}
@@ -189,7 +187,6 @@ audio{height:34px;max-width:42vw}
   <div id="mode"><span id="modeLbl"></span><button id="modeX">✕ সব বই</button></div>
   <div id="count">লোড হচ্ছে…</div>
 </header>
-<div id="stats"></div>
 <div id="resumeBox"></div>
 <div id="list"></div>
 
@@ -598,21 +595,6 @@ async function init(){
 
 /* ===== তালিকা ===== */
 const bn=n=>Number(n).toLocaleString('bn-BD',{useGrouping:false});
-function renderStats(){
-  const box=$('stats');box.innerHTML='';
-  if(view!=='books'||mode!=='all'||$('q').value.trim()||$('cat').value||typeF||!books.length)return;   // শুধু হোমে, কিছু খোঁজার আগে
-  const items=[[bn(books.length),'📚 মোট বই',''],[bn(books.filter(b=>b.audio).length),'🎧 অডিওসহ বই','aud']];
-  if(QR&&QR.all.length){
-    const a=QR.all.reduce((s,x)=>s+x.audios.length,0);
-    items.push([bn(QR.all.length),'📖 কুরআনের পিডিএফ','quran',`পূর্ণ ${bn(QR.full?1:0)} • পারা ${bn(QR.para.length)} • সূরা ${bn(QR.surah.length)}`]);
-    if(a)items.push([bn(a),'🔊 কুরআনের অডিও','quran']);
-  }
-  box.innerHTML='<div class="stg">'+items.map(([n,l,go,sub])=>`<div class="st"${go?` data-go="${go}"`:''}><b>${n}</b><span>${l}</span>${sub?`<small>${sub}</small>`:''}</div>`).join('')+'</div>';
-}
-$('stats').onclick=e=>{
-  const t=e.target.closest&&e.target.closest('[data-go]');if(!t)return;
-  if(t.dataset.go==='aud'){typeF='aud';apply();window.scrollTo(0,0)}else setView('quran');
-};
 function renderResume(){
   const box=$('resumeBox');box.innerHTML='';
   if(view!=='books'||mode!=='all'||$('q').value.trim()||$('cat').value||!books.length)return;
@@ -639,7 +621,7 @@ function apply(){
   });
   if(typeF==='aud')res=res.filter(b=>b.audio);else if(typeF==='pdf')res=res.filter(b=>!b.audio);
   filtered=res;
-  shown=0;$('list').innerHTML='';updateBadges();renderStats();renderResume();
+  shown=0;$('list').innerHTML='';updateBadges();renderResume();
   $('count').textContent=`${bn(filtered.length)} টি বই`+(base.length!==filtered.length?` (মোট ${bn(base.length)})`:'')+(fz?' • কাছাকাছি ফলাফল':'');
   if(!filtered.length){$('list').innerHTML=`<div class="empty">${(toks.length||cat||typeF)&&base.length?EMPTY.all:emptyMsg()}</div>`;return}
   more();
@@ -698,7 +680,7 @@ function qHero(it){
   d.onclick=()=>openBook(it,0);return d;
 }
 function renderQuran(){
-  const list=$('list');list.innerHTML='';$('stats').innerHTML='';$('resumeBox').innerHTML='';
+  const list=$('list');list.innerHTML='';$('resumeBox').innerHTML='';
   document.querySelectorAll('#qtabs [data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s===qsec));
   if(QR===null){$('count').textContent='লোড হচ্ছে…';return}
   if(QR===false||!QR.all.length){
