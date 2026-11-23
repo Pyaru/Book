@@ -156,6 +156,10 @@ audio{height:34px;max-width:42vw}
 #info .note{font-size:12.5px;opacity:.7;margin-top:8px;line-height:1.6}
 #info details.me{margin-top:20px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}#info details.me summary{cursor:pointer;font-weight:600}
 #info ul{list-style:none;margin:0;padding:0}#info li{display:flex;justify-content:space-between;gap:10px;padding:8px 2px;border-bottom:1px solid var(--line);font-size:14px}
+#fabW{position:fixed;right:16px;bottom:18px;width:54px;height:54px;display:none;z-index:15}
+#fabI{width:54px;height:54px;border-radius:50%;border:3px solid #fff;background:var(--brand);color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.28)}
+#fabI:active{transform:scale(.94)}
+#fabX{position:absolute;top:-8px;left:-8px;width:22px;height:22px;border-radius:50%;border:2px solid #fff;background:#555;color:#fff;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 #toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%) translateY(10px);background:rgba(20,24,22,.94);color:#fff;padding:10px 16px;border-radius:999px;font-size:14px;z-index:60;opacity:0;pointer-events:none;transition:.2s;max-width:86vw;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%)}
 /* রিডার বারের বাটন: সরু স্ক্রিনে দুই লাইন */
@@ -222,6 +226,7 @@ audio{height:34px;max-width:42vw}
   </nav>
   <div class="df" id="dfoot"></div>
 </aside>
+<div id="fabW"><button id="fabI" aria-label="অ্যাপ ইনস্টল করুন" title="অ্যাপ ইনস্টল করুন">📲</button><button id="fabX" aria-label="বাটন বন্ধ করুন" title="বন্ধ করুন">✕</button></div>
 <div id="toast"></div>
 <div id="info"><div class="ih"><button id="iClose" aria-label="বন্ধ">←</button><b>📊 ইনফো</b></div><div class="ib2" id="iBody"></div></div>
 
@@ -794,14 +799,18 @@ $('mShare').onclick=()=>{
 let deferredInstall=null;
 const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
 const isStandalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone;
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('mInstall').style.display='flex'});
-window.addEventListener('appinstalled',()=>{deferredInstall=null;$('mInstall').style.display='none';toast('অ্যাপ ইনস্টল হয়েছে')});
-if(isIOS&&!isStandalone)$('mInstall').style.display='flex';
-$('mInstall').onclick=async()=>{
-  closeMenu();
-  if(deferredInstall){deferredInstall.prompt();try{await deferredInstall.userChoice}catch(e){}deferredInstall=null;$('mInstall').style.display='none'}
+let fabOff=false;try{fabOff=localStorage.getItem('mk_fabx')==='1'}catch(e){}
+const showInstall=on=>{$('mInstall').style.display=on?'flex':'none';$('fabW').style.display=on&&!fabOff?'block':'none'};   // মেনুর আইটেম + ভাসমান বাটন   // মেনুর আইটেম + ভাসমান বাটন একসাথে
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;showInstall(true)});
+window.addEventListener('appinstalled',()=>{deferredInstall=null;showInstall(false);toast('অ্যাপ ইনস্টল হয়েছে')});
+if(isIOS&&!isStandalone)showInstall(true);
+async function doInstall(){
+  if(deferredInstall){deferredInstall.prompt();try{await deferredInstall.userChoice}catch(e){}deferredInstall=null;showInstall(false)}
   else alert('Safari-তে নিচের শেয়ার (⬆️) বাটন চেপে "Add to Home Screen" বেছে নিন।');
-};
+}
+$('mInstall').onclick=()=>{closeMenu();doInstall()};
+$('fabI').onclick=doInstall;
+$('fabX').onclick=e=>{e.stopPropagation();fabOff=true;try{localStorage.setItem('mk_fabx','1')}catch(err){}$('fabW').style.display='none';toast('মেনু থেকে যেকোনো সময় ইনস্টল করতে পারবেন')};
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});
 window.addEventListener('offline',()=>toast('ইন্টারনেট নেই'));
 window.addEventListener('online',()=>toast('ইন্টারনেট ফিরেছে'));
