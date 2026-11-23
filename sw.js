@@ -1,6 +1,6 @@
 // মাকতাবা সার্ভিস ওয়ার্কার: অ্যাপের ফাইল অফলাইনে চালানোর জন্য।
 // বইয়ের PDF এখানে নয় — সেগুলো index.html আলাদা 'mk-books' ক্যাশে রাখে।
-const VER = 'mk-shell-v1';
+const VER = 'mk-shell-v2';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 const CDN = [
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
@@ -62,6 +62,8 @@ self.addEventListener('fetch', e => {
   }
 
   // নিজের ডোমেইনের ছোট ফাইল (আইকন, manifest): ক্যাশ আগে, পেছনে আপডেট
+  // বই/অডিও (PDF, mp3…) ও Range অনুরোধ এখানে ধরা হয় না: সরাসরি নেটওয়ার্কে যাবে (206 উত্তর ক্যাশে রাখা যায় না, ধরলে বই খুলত না)
+  if (url.origin === location.origin && (req.headers.has('range') || /\.(pdf|mp3|m4a|wav|ogg|aac)$/i.test(url.pathname))) return;
   if (url.origin === location.origin) {
     e.respondWith((async () => {
       const hit = await caches.match(req);
